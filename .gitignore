@@ -1,0 +1,13 @@
+# Python
+ues-projekts/venv/
+__pycache__/
+*.pyc
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# DB & OS
+.env
+db.sqlite3
+.DS_Store
