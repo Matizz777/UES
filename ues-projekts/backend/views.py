@@ -17,14 +17,12 @@ def get_user_reservations(request):
         token = auth_header.split(' ')[1]
 
         with connection.cursor() as cursor:
-            # Atrodam lietotāju
             cursor.execute("SELECT id FROM auth_user WHERE session_token = %s", [token])
             user = cursor.fetchone()
             
             if not user:
                 return JsonResponse({"error": "Unauthorized"}, status=401)
 
-            # Atlasām rezervācijas
             cursor.execute("""
                 SELECT id, service_name, res_date, res_time 
                 FROM reservations 
@@ -34,19 +32,15 @@ def get_user_reservations(request):
             
             rows = cursor.fetchall()
             
-            # Debug - izvadām, ko atgriež datubāze
             print(f"DB atgrieztie dati: {rows}")
             
             res_list = []
             for r in rows:
-                # Apstrādājam laiku
                 time_value = r[3]
                 if time_value:
-                    # Ja ir datetime.time objekts
                     if hasattr(time_value, 'strftime'):
                         time_str = time_value.strftime("%H:%M")
                     else:
-                        # Ja ir string
                         time_str = str(time_value)[:5]
                 else:
                     time_str = "Nav laika"
@@ -58,7 +52,7 @@ def get_user_reservations(request):
                     "time": time_str
                 })
             
-            print(f"Atgriežamais saraksts: {res_list}")  # Debug
+            print(f"Atgriežamais saraksts: {res_list}")
             return JsonResponse(res_list, safe=False)
             
     except Exception as e:
@@ -70,7 +64,6 @@ def get_user_reservations(request):
 def save_booking(request):
     if request.method == 'POST':
         try:
-            # 1. Pārbaudām autorizāciju (tokenu)
             auth_header = request.headers.get('Authorization')
             if not auth_header:
                 return JsonResponse({"error": "Nav autorizācijas"}, status=401)
@@ -78,10 +71,9 @@ def save_booking(request):
             token = auth_header.split(' ')[1]
             data = json.loads(request.body)
             
-            print(f"Saņemtie dati: {data}")  # Debug
+            print(f"Saņemtie dati: {data}")
             
             with connection.cursor() as cursor:
-                # 2. Atrodam lietotāju pēc tokena
                 cursor.execute("SELECT id FROM auth_user WHERE session_token = %s", [token])
                 user = cursor.fetchone()
                 
@@ -89,19 +81,16 @@ def save_booking(request):
                     return JsonResponse({"error": "Sesija nederīga"}, status=401)
 
                 user_id = user[0]
-                service = data.get('service') or data.get('service_name')  # Atbalsta abus variantus
+                service = data.get('service') or data.get('service_name')
                 date = data.get('date') or data.get('res_date')
                 time = data.get('time') or data.get('res_time')
                 
-                print(f"Saglabājam: user_id={user_id}, service={service}, date={date}, time={time}")  # Debug
+                print(f"Saglabājam: user_id={user_id}, service={service}, date={date}, time={time}")
 
-                # 3. Pārliecināmies, ka laiks ir pareizā formātā
                 if time and ':' in time:
-                    # Ja laiks ir "14:00", pievienojam sekundes
                     if time.count(':') == 1:
                         time = f"{time}:00"
                 
-                # 4. Ierakstām rezervāciju datubāzē
                 cursor.execute(
                     """
                     INSERT INTO reservations (user_id, service_name, res_date, res_time)
@@ -129,23 +118,19 @@ def get_occupied_times(request):
 
         try:
             with connection.cursor() as cursor:
-                # Atlasām visus laikus šim datumam
                 cursor.execute("SELECT res_time FROM reservations WHERE res_date = %s", [date_str])
                 rows = cursor.fetchall()
                 
-                # Pārveidojam no SQL formāta (10:00:00) uz (10:00)
-                # str(r[0])[:5] paņem pirmos 5 simbolus no laika
                 occupied = [r[0].strftime("%H:%M") if hasattr(r[0], 'strftime') else str(r[0])[:5] for r in rows]
             return JsonResponse(occupied, safe=False)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
-def cancel_booking(request, booking_id):  # booking_id šeit ir obligāts!
+def cancel_booking(request, booking_id):
     if request.method == 'DELETE':
         try:
             with connection.cursor() as cursor:
-                # Pārbaudām, vai eksistē
                 cursor.execute("DELETE FROM reservations WHERE id = %s", [booking_id])
                 return JsonResponse({"status": "success"}, status=200)
         except Exception as e:
@@ -158,7 +143,6 @@ def get_providers(request):
     industry = request.GET.get('industry', '')
 
     with connection.cursor() as cursor:
-        # 1. Dabūjam speciālistus
         query = "SELECT id, username, industry, description FROM auth_user WHERE roles = 2"
         params = []
         if search:
@@ -172,11 +156,9 @@ def get_providers(request):
         providers_rows = cursor.fetchall()
 
         result = []
-        # 2. Ejam cauri speciālistiem, izmantojot to pašu kursoru
         for row in providers_rows:
             p_id = row[0]
             
-            # Izpildām vaicājumu pakalpojumiem
             cursor.execute("SELECT id, name, price FROM services WHERE provider_id = %s", [p_id])
             s_rows = cursor.fetchall()
             
@@ -190,7 +172,7 @@ def get_providers(request):
                 "username": row[1],
                 "industry": row[2] or 'Nav norādīta',
                 "description": row[3] or 'Nav apraksta.',
-                "services": p_services  # Šeit jau ir pareizi!
+                "services": p_services
             })
 
     return JsonResponse(result, safe=False)
@@ -202,11 +184,9 @@ def add_availability(request):
         user_token = request.headers.get('Authorization').split(' ')[1]
         
         with connection.cursor() as cursor:
-            # Atrodam sniedzēja ID pēc tokena
             cursor.execute("SELECT id FROM auth_user WHERE session_token = %s", [user_token])
             provider_id = cursor.fetchone()[0]
             
-            # Ieliekam jaunu brīvo laiku
             cursor.execute(
                 "INSERT INTO provider_availability (provider_id, available_date, available_time) VALUES (%s, %s, %s)",
                 [provider_id, data['date'], data['time']]
@@ -231,7 +211,6 @@ def get_available_slots(request):
     current_time = datetime.strptime(f"{date_str} {start_hour}:00", "%Y-%m-%d %H:%M")
     end_time = datetime.strptime(f"{date_str} {end_hour}:00", "%Y-%m-%d %H:%M")
 
-    # 2. Atrodam jau aizņemtos laikus no datubāzes
     with connection.cursor() as cursor:
         cursor.execute("SELECT time FROM reservations WHERE provider_id = %s AND date = %s", [provider_id, date_str])
         occupied = [str(r[0])[:5] for r in cursor.fetchall()]
@@ -267,7 +246,6 @@ def register_user(request):
         try:
             data = json.loads(request.body)
             username = data.get('username')
-            # Izveidojam unikālu tokenu šai sesijai
             token = f"token-{username}" 
 
             with connection.cursor() as cursor:
@@ -289,7 +267,7 @@ def register_user(request):
                         '', # last_name
                         True, # is_active
                         datetime.now(),
-                        token # ŠIS SAGLABĀ TOKENU DB, LAI 401 PAZUSTU
+                        token
                     ]
                 )
                 new_id = cursor.fetchone()[0]
@@ -298,9 +276,8 @@ def register_user(request):
                 "id": new_id, 
                 "username": username, 
                 "roles": data.get('roles'), 
-                "token": token # Sūtam to pašu tokenu uz Vue
+                "token": token
             }, status=201)
         except Exception as e:
-            # Šis izvadīs terminālī precīzu kļūdu, ja atkal nesakritīs kolonnas
             print(f"DB ERROR: {e}") 
             return JsonResponse({"error": str(e)}, status=500)
