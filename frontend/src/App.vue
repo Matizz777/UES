@@ -300,8 +300,8 @@ const regData = reactive({
   email: '',
   password: '',
   roles: '3',
-  industry: '',     // Jauns lauks
-  description: ''   // Jauns lauks
+  industry: '',
+  description: ''
 });
 
 const fetchProviders = async () => {
@@ -313,7 +313,6 @@ const fetchProviders = async () => {
       }
     });
 
-    // ŠEIT IR PROBLĒMA - mēs izmetam ārā services datus!
     providers.value = response.data.map(p => ({
       id: p.id,
       username: p.username || p.name || 'Nezināms',
@@ -328,7 +327,6 @@ const fetchProviders = async () => {
   }
 };
 
-// Lai katalogs ielādētos uzreiz, kad klients atver lapu:
 onMounted(() => {
   const savedUser = localStorage.getItem('user_auth');
   if (savedUser) {
@@ -336,7 +334,6 @@ onMounted(() => {
     user.value = parsedUser;
     axios.defaults.headers.common['Authorization'] = `Bearer ${parsedUser.token}`;
     
-    // Ja ielogotais lietotājs ir klients, ielādējam katalogu
     if (user.value.roles === 3 || user.value.roles === '3') {
       fetchProviders();
     }
@@ -345,30 +342,23 @@ onMounted(() => {
 
 const submitRegistration = async () => {
   try {
-    // 1. Sagatavojam datus (kopējam regData)
     const payload = { ...regData };
 
-    // 2. Ja reģistrējas klients, pieliekam trūkstošās vērtības PIRMS sūtīšanas
-    // Izmantojam == , lai noķertu gan skaitli 3, gan tekstu '3'
     if (payload.roles == 3) {
       payload.industry = "Klients";
       payload.description = "Lietotāja profils";
     }
 
-    // 3. Sūtām TIKAI payload (URL, dati)
     const response = await axios.post('http://127.0.0.1:8080/api/register/', payload);
     
-    // 4. Apstrādājam atbildi
     const authData = response.data;
     
-    // Pārliecināmies, ka loma ir skaitlis (lai Vue v-if strādātu pareizi)
     authData.roles = parseInt(authData.roles);
     user.value = authData;
     
     localStorage.setItem('user_auth', JSON.stringify(authData));
     axios.defaults.headers.common['Authorization'] = `Bearer ${authData.token}`;
 
-    // 5. Ja klients, ielādējam katalogu
     if (user.value.roles == 3) {
       fetchProviders();
     }
@@ -403,14 +393,13 @@ const checkAvailableTimes = async () => {
     const response = await axios.get('http://127.0.0.1:8080/api/occupied-times/', {
       params: {
         provider_id: selectedProvider.value.id,
-        date: bookingData.date  // ← Noņemiet .value
+        date: bookingData.date
       }
     });
 
-    const occupied = response.data; // Pieņemsim: ['09:00', '10:00']
+    const occupied = response.data;
     const allSlots = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];
     
-    // Izfiltrējam tikai brīvos laikus
     availableTimes.value = allSlots.filter(t => !occupied.includes(t));
     nextStep();
   } catch (error) {
@@ -433,10 +422,9 @@ const openCalendar = () => {
 const nextStep = () => { if (step.value < 4) step.value++; };
 const prevStep = () => { if (step.value > 1) step.value--; };
 
-const activeTab = ref('main'); // 'main' vai 'my-bookings'
+const activeTab = ref('main');
 const userReservations = ref([]);
 
-// Ielādēt lietotāja pierakstus
 const fetchReservations = async () => {
   try {
     console.log("Fetching reservations...");
@@ -445,7 +433,6 @@ const fetchReservations = async () => {
     
     userReservations.value = response.data;
     
-    // Pārbaudām katru rezervāciju
     userReservations.value.forEach(res => {
       console.log(`Rezervācija ${res.id}: service=${res.service}, date=${res.date}, time=${res.time}`);
     });
@@ -457,14 +444,13 @@ const fetchReservations = async () => {
   }
 };
 
-// Veikt rezervāciju (Backend savienojums)
 const confirmBooking = async () => {
   try {
     await axios.post('http://127.0.0.1:8080/api/book/', {
       provider_id: selectedProvider.value.id,
-      service_name: bookingData.service,  // ← Noņemiet .value
-      res_date: bookingData.date,        // ← Noņemiet .value
-      res_time: bookingData.time         // ← Noņemiet .value
+      service_name: bookingData.service,
+      res_date: bookingData.date,
+      res_time: bookingData.time
     });
     step.value = 4;
   } catch (error) {
@@ -472,19 +458,18 @@ const confirmBooking = async () => {
   }
 };
 
-// Atcelt pierakstu
 const cancelBooking = async (id) => {
   if (confirm("Vai tiešām vēlaties atcelt šo pierakstu?")) {
     try {
       await axios.delete(`http://127.0.0.1:8080/api/cancel-booking/${id}/`);
-      fetchReservations(); // Atsvaidzinām sarakstu
+      fetchReservations();
     } catch (error) {
       alert("Kļūda atceļot pierakstu");
     }
   }
 };
 
-const providers = ref([]); // Kataloga sniedzēji
+const providers = ref([]);
 const searchQuery = ref('');
 const selectedIndustry = ref('');
 
@@ -494,12 +479,10 @@ const newService = reactive({
   price: '',
   duration: '60'
 });
-const myServices = ref([]); // Paša sniedzēja izveidotie pakalpojumi
+const myServices = ref([]);
 
-// Pārliecinies, ka šie mainīgie ir definēti augstāk
 const viewingProvider = ref(null); 
 
-// Šī ir funkcija, kuras tev trūkst:
 const openProviderProfile = (provider) => {
   console.log("Atveram profilu speciālistam:", provider.username);
   console.log("Speciālista dati:", provider); 
@@ -507,24 +490,22 @@ const openProviderProfile = (provider) => {
   viewingProvider.value = provider;
 };
 
-// Un šī ir funkcija, kas būs vajadzīga pēc tam:
+
 const startBookingFlow = (provider, service) => {
   selectedProvider.value = provider;
-  
-  // ŠEIT IR PROBLĒMA - bookingData ir reactive, nevis ref
-  // Tāpēc jālieto bookingData.service, nevis bookingData.value.service
-  bookingData.service = service.name;  // ← Noņemiet .value
+
+  bookingData.service = service.name;
   
   viewingProvider.value = null;
   showBooking.value = true;
   step.value = 2;
 };
 const selectedProvider = (provider) => {
-  selectedProvider.value = provider; // Saglabājam izvēlēto cilvēku
-  bookingData.value.service = '';    // Notīrām iepriekšējo pakalpojumu
-  bookingData.value.date = '';       // Notīrām datumu
-  step.value = 1;                    // Atveram 1. soli (pakalpojumi)
-  showBooking.value = true;          // Parādām wizardu
+  selectedProvider.value = provider;
+  bookingData.value.service = '';
+  bookingData.value.date = '';
+  step.value = 1;
+  showBooking.value = true;
 };
 
 const finishBooking = () => {
@@ -578,7 +559,7 @@ const daysInMonth = computed(() => {
 
 const firstDayOffset = computed(() => {
   const firstDay = new Date(viewDate.value.getFullYear(), viewDate.value.getMonth(), 1).getDay();
-  return firstDay === 0 ? 6 : firstDay - 1; // Pielāgojam, lai nedēļa sākas ar Pirmdienu
+  return firstDay === 0 ? 6 : firstDay - 1;
 });
 
 const selectDate = (day) => {
@@ -600,8 +581,7 @@ const isDateBusy = (day) => {
 };
 
 const isSelected = (day) => {
-  // 1. DROŠĪBAS PĀRBAUDE: Ja bookingData nav definēts, neko nedarām
-  if (!bookingData || !bookingData.date) {  // ← Noņemiet .value
+  if (!bookingData || !bookingData.date) {
     return false;
   }
 
@@ -613,7 +593,6 @@ const isSelected = (day) => {
 
     return bookingData.value.date === currentCellDate;
   } catch (e) {
-    // Ja nu gadījumā viewDate vēl nav ielādēts
     return false;
   }
 };
@@ -624,7 +603,7 @@ const changeMonth = (offset) => {
 
 const isPast = (day) => {
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // Atiestatām laiku uz dienas sākumu salīdzināšanai
+  today.setHours(0, 0, 0, 0);
   
   const checkDate = new Date(currentYear.value, viewDate.value.getMonth(), day);
   return checkDate < today;
