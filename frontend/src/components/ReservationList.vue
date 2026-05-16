@@ -43,7 +43,9 @@ const loading      = ref(false);
 const load = async () => {
   loading.value = true;
   try {
-    const { data } = await axios.get('http://127.0.0.1:8080/api/my-reservations/');
+    const { data } = await axios.get('http://127.0.0.1:8080/api/my-reservations/', {
+      params: { role: props.user.roles }
+    });
     reservations.value = data;
   } catch {
     alert('Nevarēja ielādēt pierakstus!');

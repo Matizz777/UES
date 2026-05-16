@@ -12,6 +12,7 @@
         <option value="IT pakalpojumi">IT pakalpojumi</option>
         <option value="Skaistumkopšana">Skaistumkopšana</option>
         <option value="Sports">Sports un Fitness</option>
+        <option value="Cits">Cits</option>
       </select>
     </div>
 
