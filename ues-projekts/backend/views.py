@@ -9,58 +9,6 @@ import json
 import uuid
 from datetime import datetime, timedelta
 
-@csrf_exempt
-def get_user_reservations(request):
-    try:
-        auth_header = request.headers.get('Authorization')
-        token = auth_header.split(' ')[1]
-        role = request.GET.get('role', '3')
-
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT id FROM auth_user WHERE session_token = %s", [token])
-            user = cursor.fetchone()
-
-            if not user:
-                return JsonResponse({"error": "Unauthorized"}, status=401)
-
-            user_id = user[0]
-
-            if role == '2':  # operator — fetch bookings made TO them
-                cursor.execute("""
-                    SELECT r.id, r.service_name, r.res_date, r.res_time, u.username as client_name
-                    FROM reservations r
-                    JOIN auth_user u ON u.id = r.user_id
-                    WHERE r.provider_id = %s
-                    ORDER BY r.res_date ASC, r.res_time ASC
-                """, [user_id])
-            else:  # client — fetch their own bookings
-                cursor.execute("""
-                    SELECT r.id, r.service_name, r.res_date, r.res_time, '' as client_name
-                    FROM reservations r
-                    WHERE r.user_id = %s
-                    ORDER BY r.res_date ASC, r.res_time ASC
-                """, [user_id])
-
-            rows = cursor.fetchall()
-            res_list = []
-            for r in rows:
-                time_value = r[3]
-                time_str = time_value.strftime("%H:%M") if hasattr(time_value, 'strftime') else str(time_value)[:5]
-                res_list.append({
-                    "id": r[0],
-                    "service": r[1],
-                    "date": str(r[2]),
-                    "time": time_str,
-                    "client_name": r[4]
-                })
-
-            return JsonResponse(res_list, safe=False)
-
-    except Exception as e:
-        print(f"Kļūda get_user_reservations: {e}")
-        import traceback
-        traceback.print_exc()
-        return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
 def save_booking(request):
@@ -69,48 +17,104 @@ def save_booking(request):
             auth_header = request.headers.get('Authorization')
             if not auth_header:
                 return JsonResponse({"error": "Nav autorizācijas"}, status=401)
-
+ 
             token = auth_header.split(' ')[1]
             data = json.loads(request.body)
-
-            print(f"Saņemtie dati: {data}")
-
+ 
             with connection.cursor() as cursor:
                 cursor.execute("SELECT id FROM auth_user WHERE session_token = %s", [token])
                 user = cursor.fetchone()
-
+ 
                 if not user:
                     return JsonResponse({"error": "Sesija nederīga"}, status=401)
-
-                user_id = user[0]
-                service = data.get('service') or data.get('service_name')
-                date = data.get('date') or data.get('res_date')
-                time = data.get('time') or data.get('res_time')
+ 
+                user_id     = user[0]
+                service     = data.get('service_name')
+                date        = data.get('res_date')
+                time        = data.get('res_time')
                 provider_id = data.get('provider_id')
-
-                print(f"Saglabājam: user_id={user_id}, service={service}, date={date}, time={time}, provider_id={provider_id}")
-
-                if time and ':' in time:
-                    if time.count(':') == 1:
-                        time = f"{time}:00"
-
+                service_id  = data.get('service_id')
+                booked_price = data.get('booked_price')  # snapshot at booking time
+ 
+                if time and ':' in time and time.count(':') == 1:
+                    time = f"{time}:00"
+ 
                 cursor.execute(
                     """
-                    INSERT INTO reservations (user_id, service_name, res_date, res_time, provider_id)
-                    VALUES (%s, %s, %s, %s, %s)
+                    INSERT INTO reservations
+                      (user_id, service_name, res_date, res_time, provider_id, service_id, booked_price)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                     """,
-                    [user_id, service, date, time, provider_id]
+                    [user_id, service, date, time, provider_id, service_id, booked_price]
                 )
-
+ 
             return JsonResponse({"message": "Rezervācija saglabāta!"}, status=201)
-
+ 
         except Exception as e:
             print(f"Kļūda: {e}")
             import traceback
             traceback.print_exc()
             return JsonResponse({"error": str(e)}, status=500)
-
+ 
     return JsonResponse({"error": "Tikai POST pieprasījumi"}, status=405)
+ 
+@csrf_exempt
+def get_user_reservations(request):
+    try:
+        auth_header = request.headers.get('Authorization')
+        token = auth_header.split(' ')[1]
+        role = request.GET.get('role', '3')
+ 
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id FROM auth_user WHERE session_token = %s", [token])
+            user = cursor.fetchone()
+ 
+            if not user:
+                return JsonResponse({"error": "Unauthorized"}, status=401)
+ 
+            user_id = user[0]
+ 
+            if role == '2':  # operator — bookings made TO them
+                cursor.execute("""
+                    SELECT r.id, r.service_name, r.res_date, r.res_time,
+                           u.username AS client_name, '' AS provider_name, r.booked_price
+                    FROM reservations r
+                    JOIN auth_user u ON u.id = r.user_id
+                    WHERE r.provider_id = %s
+                    ORDER BY r.res_date ASC, r.res_time ASC
+                """, [user_id])
+            else:  # client — their own bookings
+                cursor.execute("""
+                    SELECT r.id, r.service_name, r.res_date, r.res_time,
+                           '' AS client_name, p.username AS provider_name, r.booked_price
+                    FROM reservations r
+                    LEFT JOIN auth_user p ON p.id = r.provider_id
+                    WHERE r.user_id = %s
+                    ORDER BY r.res_date ASC, r.res_time ASC
+                """, [user_id])
+ 
+            rows = cursor.fetchall()
+            res_list = []
+            for r in rows:
+                time_value = r[3]
+                time_str = time_value.strftime("%H:%M") if hasattr(time_value, 'strftime') else str(time_value)[:5]
+                res_list.append({
+                    "id":            r[0],
+                    "service":       r[1],
+                    "date":          str(r[2]),
+                    "time":          time_str,
+                    "client_name":   r[4],
+                    "provider_name": r[5],
+                    "booked_price":  float(r[6]) if r[6] else None,
+                })
+ 
+            return JsonResponse(res_list, safe=False)
+ 
+    except Exception as e:
+        print(f"Kļūda get_user_reservations: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
 def get_occupied_times(request):
@@ -144,7 +148,7 @@ def cancel_booking(request, booking_id):
 def get_providers(request):
     search = request.GET.get('search', '')
     industry = request.GET.get('industry', '')
-
+ 
     with connection.cursor() as cursor:
         query = "SELECT id, username, industry, description FROM auth_user WHERE roles = 2"
         params = []
@@ -154,30 +158,30 @@ def get_providers(request):
         if industry:
             query += " AND industry ILIKE %s"
             params.append(f'%{industry}%')
-
+ 
         cursor.execute(query, params)
         providers_rows = cursor.fetchall()
-
+ 
         result = []
         for row in providers_rows:
             p_id = row[0]
-
-            cursor.execute("SELECT id, name, price FROM services WHERE provider_id = %s", [p_id])
+            cursor.execute(
+                "SELECT id, name, price, description FROM services WHERE provider_id = %s",
+                [p_id]
+            )
             s_rows = cursor.fetchall()
-
             p_services = [
-                {"id": s[0], "name": s[1], "price": float(s[2])}
+                {"id": s[0], "name": s[1], "price": float(s[2]), "description": s[3] or ''}
                 for s in s_rows
             ]
-
             result.append({
-                "id": p_id,
-                "username": row[1],
-                "industry": row[2] or 'Nav norādīta',
+                "id":          p_id,
+                "username":    row[1],
+                "industry":    row[2] or 'Nav norādīta',
                 "description": row[3] or 'Nav apraksta.',
-                "services": p_services
+                "services":    p_services
             })
-
+ 
     return JsonResponse(result, safe=False)
 
 @csrf_exempt
@@ -231,12 +235,10 @@ def add_service(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            print(f"Saņemtie dati: {data}")
-
             with connection.cursor() as cursor:
                 cursor.execute(
-                    "INSERT INTO services (name, price, provider_id) VALUES (%s, %s, %s)",
-                    [data.get('name'), data.get('price'), data.get('provider_id')]
+                    "INSERT INTO services (name, price, description, provider_id) VALUES (%s, %s, %s, %s)",
+                    [data.get('name'), data.get('price'), data.get('description', ''), data.get('provider_id')]
                 )
             return JsonResponse({"status": "success"}, status=201)
         except Exception as e:
@@ -318,3 +320,47 @@ def login_user(request):
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Tikai POST pieprasījumi"}, status=405)
+@csrf_exempt
+def get_my_services(request):
+    provider_id = request.GET.get('provider_id')
+    if not provider_id:
+        return JsonResponse({"error": "Nav provider_id"}, status=400)
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, name, price, description FROM services WHERE provider_id = %s ORDER BY id ASC",
+                [provider_id]
+            )
+            rows = cursor.fetchall()
+        result = [{"id": r[0], "name": r[1], "price": float(r[2]), "description": r[3] or ''} for r in rows]
+        return JsonResponse(result, safe=False)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+ 
+ 
+@csrf_exempt
+def edit_service(request, service_id):
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE services SET name = %s, price = %s, description = %s WHERE id = %s",
+                    [data.get('name'), data.get('price'), data.get('description', ''), service_id]
+                )
+            return JsonResponse({"status": "success"})
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+    return JsonResponse({"error": "Tikai PUT pieprasījumi"}, status=405)
+ 
+ 
+@csrf_exempt
+def delete_service(request, service_id):
+    if request.method == 'DELETE':
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("DELETE FROM services WHERE id = %s", [service_id])
+            return JsonResponse({"status": "success"})
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+    return JsonResponse({"error": "Tikai DELETE pieprasījumi"}, status=405)

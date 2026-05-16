@@ -9,7 +9,7 @@
   <BookingWizard
     v-if="showBooking"
     :provider="selectedProvider"
-    :service-name="pendingService"
+    :service="selectedService"
     @done="showBooking = false"
     @cancel="showBooking = false"
   />
@@ -31,11 +31,11 @@ defineProps({ user: Object, activeTab: String });
 
 const showBooking      = ref(false);
 const selectedProvider = ref(null);
-const pendingService   = ref('');
+const selectedService  = ref(null);
 
 const onStartBooking = ({ provider, service }) => {
   selectedProvider.value = provider;
-  pendingService.value   = service.name;
+  selectedService.value  = service;
   showBooking.value      = true;
 };
 </script>

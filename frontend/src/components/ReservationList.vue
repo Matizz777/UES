@@ -15,17 +15,19 @@
         <div class="res-main-info">
           <div class="res-date-box">
             <span class="day">{{ res.date.split('-')[2] }}</span>
-            <span class="month">{{ res.date.split('-')[1] }}</span>
+            <span class="month">{{ monthName(res.date.split('-')[1]) }}</span>
           </div>
           <div class="res-details">
             <h4>{{ res.service }}</h4>
-            <p>
-              🕙 {{ res.time && res.time !== 'Nav laika' ? res.time.slice(0, 5) : 'Laiks nav norādīts' }}
-              • {{ user.roles === 2 ? 'Klients: ' + res.client_name : 'Pie speciālista' }}
-            </p>
+            <div class="res-meta">
+              <span>🕙 {{ res.time && res.time !== 'Nav laika' ? res.time.slice(0, 5) : 'Laiks nav norādīts' }}</span>
+              <span v-if="user.roles === 2">👤 Klients: <strong>{{ res.client_name }}</strong></span>
+              <span v-else>👤 Speciālists: <strong>{{ res.provider_name || 'Nav norādīts' }}</strong></span>
+              <span class="res-price">💶 {{ res.booked_price ? res.booked_price + ' €' : 'Cena nav fiksēta' }}</span>
+            </div>
           </div>
         </div>
-        <button class="btn-cancel-text" @click="cancel(res.id)">Atcelt pierakstu</button>
+        <button class="btn-cancel-text" @click="cancel(res.id)">Atcelt</button>
       </div>
     </div>
   </div>
@@ -39,6 +41,9 @@ const props = defineProps({ user: Object });
 
 const reservations = ref([]);
 const loading      = ref(false);
+
+const MONTHS = ['Jan','Feb','Mar','Apr','Mai','Jūn','Jūl','Aug','Sep','Okt','Nov','Dec'];
+const monthName = (m) => MONTHS[parseInt(m) - 1] || m;
 
 const load = async () => {
   loading.value = true;
@@ -66,3 +71,19 @@ const cancel = async (id) => {
 
 onMounted(load);
 </script>
+
+<style scoped>
+.res-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+.res-price {
+  color: #2e7d32;
+  font-weight: 600;
+}
+</style>
