@@ -259,7 +259,7 @@ def register_user(request):
                     [
                         username, 
                         data.get('email'), 
-                        make.password(data.get('password')), 
+                        make_password(data.get('password')), 
                         data.get('roles', 3), 
                         data.get('industry', ''), 
                         data.get('description', ''),
