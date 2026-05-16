@@ -8,6 +8,16 @@
         >
           {{ user.roles === 2 ? '🏢 Speciālista panelis' : '🔍 Atrast speciālistu' }}
         </button>
+
+        <!-- Calendar tab — only for providers -->
+        <button
+          v-if="user.roles === 2"
+          :class="{ active: activeTab === 'calendar' }"
+          @click="activeTab = 'calendar'"
+        >
+          🗓️ Mans kalendārs
+        </button>
+
         <button
           :class="{ active: activeTab === 'my-bookings' }"
           @click="activeTab = 'my-bookings'"
@@ -18,7 +28,6 @@
     </header>
 
     <main class="dashboard-content">
-      <!-- Provider dashboard -->
       <ProviderDashboard
         v-if="user.roles === 2"
         :user="user"
@@ -26,7 +35,6 @@
         @change-tab="activeTab = $event"
       />
 
-      <!-- Client dashboard -->
       <ClientDashboard
         v-else-if="user.roles === 3"
         :user="user"
