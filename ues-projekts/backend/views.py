@@ -259,7 +259,7 @@ def register_user(request):
                     [
                         username, 
                         data.get('email'), 
-                        data.get('password'), 
+                        make.password(data.get('password')), 
                         data.get('roles', 3), 
                         data.get('industry', ''), 
                         data.get('description', ''),
@@ -281,3 +281,37 @@ def register_user(request):
         except Exception as e:
             print(f"DB ERROR: {e}") 
             return JsonResponse({"error": str(e)}, status=500)
+@csrf_exempt
+def login_user(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            password = data.get('password')
+
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT id, username, password, roles, session_token FROM auth_user WHERE username = %s",
+                    [username]
+                )
+                user = cursor.fetchone()
+
+            if not user:
+                return JsonResponse({"error": "Nepareizs lietotājvārds vai parole."}, status=400)
+
+            from django.contrib.auth.hashers import check_password
+            if not check_password(password, user[2]):
+                return JsonResponse({"error": "Nepareizs lietotājvārds vai parole."}, status=400)
+
+            return JsonResponse({
+                "id": user[0],
+                "username": user[1],
+                "roles": user[3],
+                "token": user[4]
+            })
+
+        except Exception as e:
+            print(f"Login kļūda: {e}")
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Tikai POST pieprasījumi"}, status=405)

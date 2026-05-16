@@ -20,5 +20,5 @@ urlpatterns = [
     path('api/cancel-booking/<int:booking_id>/', views.cancel_booking, name='cancel_booking'),
     path('api/services/add/', views.add_service, name='add_service'),
     path('api/catalog/', views.get_providers, name='get_providers'),
-    path('api/availability/', views.save_availability, name='availability'),
+    path('api/availability/', views.add_availability, name='availability'),
 ]
