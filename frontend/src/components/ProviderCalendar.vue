@@ -176,6 +176,8 @@ const loadBookings = async () => {
     const { data } = await axios.get('http://127.0.0.1:8080/api/provider-calendar/', {
       params: { year: year.value, month: month.value }
     });
+    console.log('Ielādētie pieraksti:', data);
+    console.log('Pierakstu skaits:', data.length);
     bookings.value = data;
   } catch (e) {
     console.error('Kļūda ielādējot kalendāru:', e);
@@ -183,7 +185,6 @@ const loadBookings = async () => {
     loading.value = false;
   }
 };
-
 const changeMonth = async (offset) => {
   viewDate.value = new Date(year.value, month.value - 1 + offset, 1);
   selectedDay.value = null;
@@ -198,12 +199,27 @@ const openCancel = (b) => {
 
 const confirmCancel = async () => {
   try {
+    console.log('Atceļ pierakstu...');
     await axios.delete(`http://127.0.0.1:8080/api/cancel-booking/${cancelTarget.value.id}/`, {
       data: { reason: cancelReason.value }
     });
+    console.log('Pieraksts atcelts');
     cancelTarget.value = null;
+    
+    console.log('Pirms loadBookings, bookings garums:', bookings.value.length);
     await loadBookings();
-  } catch {
+    console.log('Pēc loadBookings, bookings garums:', bookings.value.length);
+    
+    if (selectedDay.value) {
+      const currentDay = selectedDay.value;
+      selectedDay.value = null;
+      setTimeout(() => {
+        selectedDay.value = currentDay;
+        console.log('SelectedDay atjaunots');
+      }, 50);
+    }
+  } catch (err) {
+    console.error('Kļūda:', err);
     alert('Kļūda atceļot pierakstu.');
   }
 };
@@ -219,12 +235,20 @@ const openReschedule = (b) => {
 const confirmReschedule = async () => {
   try {
     await axios.patch(`http://127.0.0.1:8080/api/reschedule-booking/${rescheduleTarget.value.id}/`, {
-      res_date:   newDate.value,
-      res_time:   newTime.value,
-      reason:     rescheduleReason.value,
+      res_date: newDate.value,
+      res_time: newTime.value,
+      reason: rescheduleReason.value,
     });
     rescheduleTarget.value = null;
     await loadBookings();
+    
+    if (selectedDay.value) {
+      const currentDay = selectedDay.value;
+      selectedDay.value = null;
+      setTimeout(() => {
+        selectedDay.value = currentDay;
+      }, 50);
+    }
   } catch (err) {
     alert('Kļūda pārceļot pierakstu: ' + (err.response?.data?.error ?? ''));
   }
@@ -234,25 +258,67 @@ onMounted(loadBookings);
 </script>
 
 <style scoped>
-.provider-calendar { padding: 0.5rem 0; }
+.provider-calendar { 
+  padding: 0.5rem;
+  width: 100%;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .provider-calendar {
+    width: 95%;
+  }
+}
+
+@media (min-width: 1200px) {
+  .provider-calendar {
+    width: 900px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .provider-calendar {
+    width: 1100px;
+  }
+}
 
 .cal-nav {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1.5rem;
+  gap: 1rem;
   margin: 1rem 0;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
+  flex-wrap: wrap;
 }
+
+@media (min-width: 768px) {
+  .cal-nav {
+    gap: 1.5rem;
+    font-size: 1.1rem;
+  }
+}
+
 .cal-nav button {
   background: none;
   border: 1px solid #ccc;
   border-radius: 8px;
-  width: 36px; height: 36px;
+  width: 36px;
+  height: 36px;
   font-size: 1.2rem;
   cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 480px) {
+  .cal-nav button {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
 }
 
 .month-grid {
@@ -261,104 +327,313 @@ onMounted(loadBookings);
   gap: 4px;
   margin-bottom: 1.5rem;
 }
+
+@media (min-width: 768px) {
+  .month-grid {
+    gap: 8px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .month-grid {
+    gap: 12px;
+  }
+}
+
 .grid-header {
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   color: #aaa;
   padding: 0.4rem 0;
   font-weight: 600;
 }
+
+@media (min-width: 768px) {
+  .grid-header {
+    font-size: 0.8rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .grid-header {
+    font-size: 0.9rem;
+  }
+}
+
 .grid-cell {
-  min-height: 72px;
+  min-height: 60px;
   border-radius: 10px;
-  padding: 0.4rem;
+  padding: 0.3rem;
   background: var(--color-background-soft, #f9f9f9);
   cursor: pointer;
   transition: background 0.15s;
 }
+
+@media (min-width: 768px) {
+  .grid-cell {
+    min-height: 80px;
+    padding: 0.4rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .grid-cell {
+    min-height: 100px;
+    padding: 0.6rem;
+  }
+}
+
 .grid-cell:hover { background: #e8f5e9; }
 .grid-cell.empty { background: transparent; cursor: default; }
+
 .grid-cell.today .day-num {
   background: #388e3c;
   color: #fff;
   border-radius: 50%;
-  width: 24px; height: 24px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.85rem;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
 }
+
+@media (min-width: 768px) {
+  .grid-cell.today .day-num {
+    width: 26px;
+    height: 26px;
+    font-size: 0.85rem;
+  }
+}
+
 .grid-cell.selected { background: #c8e6c9; border: 2px solid #388e3c; }
 .grid-cell.has-bookings { background: #f1f8e9; }
 
 .day-num {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: #444;
   display: inline-block;
-  width: 24px; height: 24px;
-  line-height: 24px;
+  width: 22px;
+  height: 22px;
+  line-height: 22px;
   text-align: center;
 }
-.booking-dots { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: #388e3c; display: inline-block; }
-.dot-more { font-size: 0.7rem; color: #888; }
 
-/* Day panel */
+@media (min-width: 768px) {
+  .day-num {
+    font-size: 0.85rem;
+    width: 26px;
+    height: 26px;
+    line-height: 26px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .day-num {
+    font-size: 0.95rem;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+  }
+}
+
+.booking-dots { 
+  display: flex; 
+  flex-wrap: wrap; 
+  gap: 2px; 
+  margin-top: 4px; 
+}
+
+@media (min-width: 768px) {
+  .booking-dots { 
+    gap: 3px; 
+    margin-top: 6px; 
+  }
+}
+
+.dot { 
+  width: 6px; 
+  height: 6px; 
+  border-radius: 50%; 
+  background: #388e3c; 
+  display: inline-block; 
+}
+
+@media (min-width: 768px) {
+  .dot { 
+    width: 8px; 
+    height: 8px; 
+  }
+}
+
+.dot-more { 
+  font-size: 0.6rem; 
+  color: #888; 
+}
+
+@media (min-width: 768px) {
+  .dot-more { 
+    font-size: 0.7rem; 
+  }
+}
+
 .day-panel {
   background: var(--color-background-soft, #f9f9f9);
   border-radius: 14px;
-  padding: 1.25rem;
+  padding: 1rem;
   margin-top: 0.5rem;
 }
-.day-panel h3 { margin: 0 0 1rem; font-size: 1.1rem; text-transform: capitalize; }
-.empty-day { color: #aaa; font-size: 0.9rem; }
 
-.timeline { display: flex; flex-direction: column; gap: 0.75rem; }
+@media (min-width: 768px) {
+  .day-panel {
+    padding: 1.25rem;
+  }
+}
+
+.day-panel h3 { 
+  margin: 0 0 1rem; 
+  font-size: 1rem; 
+  text-transform: capitalize; 
+}
+
+@media (min-width: 768px) {
+  .day-panel h3 { 
+    font-size: 1.1rem; 
+  }
+}
+
+.empty-day { 
+  color: #aaa; 
+  font-size: 0.85rem; 
+}
+
+.timeline { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 0.75rem; 
+}
 
 .timeline-block {
   display: flex;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.5rem;
   background: #fff;
   border-radius: 10px;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem;
   border-left: 4px solid #388e3c;
-  align-items: center;
-  flex-wrap: wrap;
 }
+
+@media (min-width: 640px) {
+  .timeline-block {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+  }
+}
+
 .timeline-time {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  min-width: 48px;
+  gap: 0.5rem;
   font-size: 0.82rem;
   color: #888;
 }
-.t-start { font-weight: 700; color: #333; font-size: 0.9rem; }
-.timeline-content { flex: 1; display: flex; flex-direction: column; gap: 0.2rem; }
-.timeline-service { font-weight: 600; font-size: 0.95rem; }
-.timeline-client  { font-size: 0.85rem; color: #666; }
-.timeline-price   { font-size: 0.85rem; color: #2e7d32; font-weight: 600; }
 
-.timeline-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+@media (min-width: 640px) {
+  .timeline-time {
+    flex-direction: column;
+    min-width: 48px;
+    gap: 0;
+  }
+}
+
+.t-start { 
+  font-weight: 700; 
+  color: #333; 
+  font-size: 0.9rem; 
+}
+
+.timeline-content { 
+  flex: 1; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 0.2rem; 
+}
+
+.timeline-service { 
+  font-weight: 600; 
+  font-size: 0.9rem; 
+}
+
+@media (min-width: 768px) {
+  .timeline-service { 
+    font-size: 0.95rem; 
+  }
+}
+
+.timeline-client { 
+  font-size: 0.8rem; 
+  color: #666; 
+}
+
+.timeline-price { 
+  font-size: 0.8rem; 
+  color: #2e7d32; 
+  font-weight: 600; 
+}
+
+.timeline-actions { 
+  display: flex; 
+  gap: 0.5rem; 
+  justify-content: flex-end;
+}
+
+.btn-reschedule,
+.btn-cancel-booking {
+  padding: 0.4rem 1rem;
+  font-size: 0.8rem;
+  border-radius: 20px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
 
 .btn-reschedule {
-  background: none;
-  border: 1px solid #aaa;
-  border-radius: 8px;
-  padding: 0.3rem 0.7rem;
-  font-size: 0.82rem;
-  cursor: pointer;
-}
-.btn-cancel-booking {
-  background: none;
-  border: 1px solid #e57373;
-  color: #e57373;
-  border-radius: 8px;
-  padding: 0.3rem 0.7rem;
-  font-size: 0.82rem;
-  cursor: pointer;
+  background: #4a90e2;
+  border: none;
+  color: white;
 }
 
-/* Modal */
+.btn-reschedule:hover {
+  background: #357abd;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+}
+
+.btn-cancel-booking {
+  background: #fff;
+  border: 1px solid #e53935;
+  color: #e53935;
+}
+
+.btn-cancel-booking:hover {
+  background: #e53935;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(229, 57, 53, 0.3);
+}
+
+@media (min-width: 768px) {
+  .btn-reschedule,
+  .btn-cancel-booking {
+    padding: 0.5rem 1.2rem;
+    font-size: 0.85rem;
+  }
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -369,54 +644,93 @@ onMounted(loadBookings);
   z-index: 1000;
   padding: 1rem;
 }
+
 .modal-card {
   background: #fff;
   border-radius: 16px;
-  padding: 1.75rem;
+  padding: 1.25rem;
   width: 100%;
-  max-width: 440px;
+  max-width: 400px;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
   box-shadow: 0 8px 32px rgba(0,0,0,0.18);
 }
-.modal-card h3 { margin: 0 0 0.25rem; font-size: 1.15rem; }
-.modal-card p  { margin: 0; font-size: 0.9rem; color: #555; }
-.old-time      { color: #aaa !important; font-size: 0.85rem !important; }
+
+@media (min-width: 768px) {
+  .modal-card {
+    padding: 1.75rem;
+    max-width: 440px;
+  }
+}
+
+.modal-card h3 { 
+  margin: 0 0 0.25rem; 
+  font-size: 1rem; 
+}
+
+@media (min-width: 768px) {
+  .modal-card h3 { 
+    font-size: 1.15rem; 
+  }
+}
+
+.modal-card p { 
+  margin: 0; 
+  font-size: 0.85rem; 
+  color: #555; 
+}
+
+.old-time { 
+  color: #aaa !important; 
+  font-size: 0.8rem !important; 
+}
 
 .modal-label {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #888;
   margin-top: 0.5rem;
 }
+
 .modal-card textarea,
 .modal-card input[type="date"],
 .modal-card input[type="time"] {
   width: 100%;
   border: 1px solid #ccc;
   border-radius: 8px;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem;
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   box-sizing: border-box;
   resize: vertical;
 }
+
 .modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
   margin-top: 0.5rem;
 }
+
 .btn-danger {
   background: #e53935;
   color: #fff;
   border: none;
   border-radius: 8px;
-  padding: 0.5rem 1.25rem;
+  padding: 0.4rem 1rem;
   cursor: pointer;
   font-weight: 600;
+  font-size: 0.85rem;
 }
-.btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.loading-overlay { text-align: center; color: #aaa; padding: 2rem; }
+.btn-danger:disabled { 
+  opacity: 0.5; 
+  cursor: not-allowed; 
+}
+
+.loading-overlay { 
+  text-align: center; 
+  color: #aaa; 
+  padding: 2rem; 
+}
 </style>

@@ -1138,6 +1138,13 @@ body {
 
 .day-cell.empty { cursor: default; }
 
+.day-picker{
+  display:flex;
+  gap:0.4rem;
+  flex-wrap:wrap;
+  padding: 7px;
+}
+
 /* Time slots */
 .time-grid {
   display: grid;
@@ -1260,3 +1267,65 @@ body {
 .shadow { box-shadow: 0 8px 24px rgba(0,0,0,0.07); }
 
 .fade-in { animation: fadeIn 0.4s ease; }
+
+.btn-waitlist {
+  background: #ff9800;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+.btn-waitlist:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.provider-contact {
+  margin: 12px 0;
+  padding: 8px 0;
+  border-top: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #555;
+  padding: 4px 0;
+}
+
+.contact-icon {
+  font-size: 0.9rem;
+  min-width: 24px;
+}
+
+.contact-text {
+  word-break: break-word;
+}
+
+.contact-item.reg .contact-text {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.info-note {
+  background: #e3f2fd;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: #1565c0;
+  margin: 8px 0;
+}
+
+.info-note span {
+  font-size: 1.1rem;
+}
+

@@ -22,11 +22,33 @@
           <option value="IT pakalpojumi">IT pakalpojumi</option>
           <option value="Sports">Sports un Fitness</option>
         </select>
+        
         <textarea
           v-model="regData.description"
           placeholder="Pastāsti par saviem pakalpojumiem..."
           class="desc-textarea"
         ></textarea>
+
+        <input
+          type="text"
+          v-model="regData.reg_number"
+          placeholder="Reģistrācijas numurs (ja ir)"
+          class="modern-input"
+        />
+        
+        <input
+          type="text"
+          v-model="regData.address"
+          placeholder="Adrese (juridiskā / biroja adrese)"
+          class="modern-input"
+        />
+        
+        <input
+          type="tel"
+          v-model="regData.phone"
+          placeholder="Tālruņa numurs"
+          class="modern-input"
+        />
       </div>
 
       <button class="btn-register" @click="submit" :disabled="loading">
@@ -47,7 +69,7 @@ import axios from 'axios';
 
 const emit = defineEmits(['register-success', 'go-login', 'back']);
 
-const regData  = reactive({ username: '', email: '', password: '', roles: '3', industry: '', description: '' });
+const regData  = reactive({ username: '', email: '', password: '', roles: '3', industry: '', description: '', reg_number: '', address: '', phone: '' });
 const loading  = ref(false);
 const errorMsg = ref('');
 

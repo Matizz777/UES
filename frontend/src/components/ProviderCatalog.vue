@@ -25,6 +25,20 @@
             <span class="badge-industry">{{ p.industry }}</span>
           </div>
         </div>
+        <div class="provider-contact" v-if="p.phone || p.address || p.reg_number">
+          <div v-if="p.phone" class="contact-item">
+            <span class="contact-icon">📞</span>
+            <span class="contact-text">{{ p.phone }}</span>
+          </div>
+          <div v-if="p.address" class="contact-item">
+            <span class="contact-icon">📍</span>
+            <span class="contact-text">{{ p.address }}</span>
+          </div>
+          <div v-if="p.reg_number" class="contact-item reg">
+            <span class="contact-icon">🏢</span>
+            <span class="contact-text">Reģ. Nr. {{ p.reg_number }}</span>
+          </div>
+        </div>
         <p class="provider-desc">{{ p.description }}</p>
         <button class="btn-book" @click="viewingProvider = p">Skatīt pakalpojumus</button>
       </div>
@@ -73,11 +87,15 @@ const fetchProviders = async () => {
     const { data } = await axios.get('http://127.0.0.1:8080/api/catalog/', {
       params: { search: searchQuery.value, industry: selectedIndustry.value }
     });
+    console.log('Pirmais providers:', data[0]);
     providers.value = data.map(p => ({
       id:          p.id,
       username:    p.username || p.name || 'Nezināms',
       industry:    p.industry || 'Nav norādīta',
       description: p.description || p.desc || 'Nav apraksta.',
+      phone: p.phone,
+      address: p.address,
+      reg_number: p.reg_number,
       services:    p.services || []
     }));
   } catch (err) {

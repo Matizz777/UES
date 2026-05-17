@@ -21,4 +21,11 @@ urlpatterns = [
     path('api/notifications/', views.get_notifications, name='notifications'),
     path('api/notifications/read/', views.mark_notifications_read, name='notifications-read'),
     path('api/notifications/delete/<int:notif_id>/', views.delete_notification, name='notification-delete'),
+    path('api/profile/', views.get_profile, name='profile'),
+    path('api/profile/update/', views.update_profile, name='update-profile'),
+    path('api/profile/change-password/', views.change_password, name='change-password'),
+    path('api/waitlist/add/', views.add_to_waitlist, name='add-waitlist'),
+    path('api/waitlist/status/', views.get_waitlist_status, name='waitlist-status'),
+    path('api/waitlist/remove/<int:waitlist_id>/', views.remove_from_waitlist, name='remove-waitlist'),
+    path('api/waitlist/claim/', views.claim_waitlist_spot, name='claim-waitlist'),
 ]

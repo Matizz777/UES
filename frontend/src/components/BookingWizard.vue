@@ -49,9 +49,13 @@
               <span class="detail-label">📋 Apraksts</span>
               <span class="detail-value desc-text">{{ service.description }}</span>
             </div>
-            <div v-if="provider.description" class="detail-row column">
-              <span class="detail-label">👤 Par speciālistu</span>
-              <span class="detail-value desc-text">{{ provider.description }}</span>
+            <div class="detail-row">
+              <span class="detail-label">📍 Adrese</span>
+              <span class="detail-value">{{ provider.address || 'Nav norādīta' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">📞 Tālrunis</span>
+              <span class="detail-value">{{ provider.phone || 'Nav norādīts' }}</span>
             </div>
           </div>
           <div class="confirm-notice">
@@ -123,6 +127,9 @@
         </div>
         <div v-else class="empty-state">
           <p>Diemžēl šajā dienā visi laiki ir aizņemti.</p>
+          <button class="btn-waitlist" @click="addToWaitlist" :disabled="waitlistAdded">
+            {{ waitlistAdded ? '✓ Pievienots gaidīšanas sarakstam' : '➕ Pievienot gaidīšanas sarakstam' }}
+          </button>
         </div>
 
         <div class="wizard-footer">
@@ -143,6 +150,14 @@
           <div class="summary-row"><span>Datums:</span><strong>{{ selectedDate }}</strong></div>
           <div class="summary-row"><span>Laiks:</span><strong>{{ selectedTime }}</strong></div>
           <div class="summary-row"><span>Cena:</span><strong class="price-highlight">{{ service.price }} €</strong></div>
+          <div class="summary-row">
+          <span>📍 Adrese:</span>
+          <strong>{{ provider.address || 'Tiks norādīta pēc rezervācijas' }}</strong>
+        </div>
+        <div class="summary-row">
+          <span>📞 Sazināties:</span>
+          <strong>{{ provider.phone || 'Nav norādīts' }}</strong>
+        </div>
         </div>
         <button class="btn-primary" @click="$emit('done')">Pabeigt</button>
       </div>
@@ -167,7 +182,7 @@ const selectedTime    = ref('');
 const availableTimes  = ref([]);
 const viewDate        = ref(new Date());
 const loadingDates    = ref(false);
-const dateAvailability = ref({});  // { 'YYYY-MM-DD': true/false }
+const dateAvailability = ref({});
 
 const DAY_NAMES = { '1':'Pirmdiena','2':'Otrdiena','3':'Trešdiena','4':'Ceturtdiena','5':'Piektdiena','6':'Sestdiena','7':'Svētdiena' };
 const DAY_SHORT = { '1':'Pr','2':'Ot','3':'Tr','4':'Ce','5':'Pk','6':'Se','7':'Sv' };
@@ -293,9 +308,42 @@ const confirmBooking = async () => {
     alert('Rezervācija neizdevās: ' + (err.response?.data?.error ?? ''));
   }
 };
+
+const waitlistAdded = ref(false);
+
+const addToWaitlist = async () => {
+  try {
+    await axios.post('http://127.0.0.1:8080/api/waitlist/add/', {
+      service_id: props.service.id,
+      provider_id: props.provider.id,
+      preferred_date: selectedDate.value,
+      preferred_time: selectedTime.value || null,
+    });
+    waitlistAdded.value = true;
+    alert('Pievienots gaidīšanas sarakstam! Kad atbrīvosies vieta, saņemsiet paziņojumu.');
+  } catch (err) {
+    alert(err.response?.data?.error || 'Kļūda pievienojot sarakstam');
+  }
+};
 </script>
 
 <style scoped>
+
+.btn-waitlist {
+  background: #ff9800;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+.btn-waitlist:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
 .day-cell.day-available {
   background: #e8f5e9;
   color: #2e7d32;

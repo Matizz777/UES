@@ -9,7 +9,6 @@
           {{ user.roles === 2 ? '🏢 Speciālista panelis' : '🔍 Atrast speciālistu' }}
         </button>
 
-        <!-- Calendar tab — only for providers -->
         <button
           v-if="user.roles === 2"
           :class="{ active: activeTab === 'calendar' }"
@@ -19,10 +18,11 @@
         </button>
 
         <button
+          v-if="user.roles === 3"
           :class="{ active: activeTab === 'my-bookings' }"
           @click="activeTab = 'my-bookings'"
         >
-          {{ user.roles === 2 ? '📅 Klientu pieraksti' : '📋 Mani pieraksti' }}
+          📋 Mani pieraksti
         </button>
       </div>
     </header>

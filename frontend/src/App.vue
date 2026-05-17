@@ -1,5 +1,10 @@
 <template>
-  <NavBar :user="user" @logout="handleLogout" />
+    <NavBar 
+    v-if="user" 
+    :user="user" 
+    @logout="handleLogout"
+    @show-profile="showProfileModal = true"
+  />
 
   <!-- Landing / Auth -->
   <div class="apraksts" v-if="!user && authView === 'none'">
@@ -26,6 +31,11 @@
     @go-login="authView = 'login'"
     @back="authView = 'none'"
   />
+    <ProfileModal 
+    v-if="showProfileModal"
+    :user="user"
+    @close="showProfileModal = false"
+  />
 
   <!-- Authenticated dashboard -->
   <Dashboard v-else-if="user" :user="user" />
@@ -44,11 +54,13 @@ import NavBar      from './components/NavBar.vue';
 import LoginForm   from './components/LoginForm.vue';
 import RegisterForm from './components/RegisterForm.vue';
 import Dashboard   from './components/Dashboard.vue';
+import ProfileModal from './components/ProfileModal.vue';
 
 import './assets/style.css';
 
 const user     = ref(null);
 const authView = ref('none'); // 'none' | 'login' | 'register'
+const showProfileModal = ref(false);
 
 onMounted(() => {
   const saved = localStorage.getItem('user_auth');
@@ -72,5 +84,9 @@ const handleLogout = () => {
   localStorage.removeItem('user_auth');
   delete axios.defaults.headers.common['Authorization'];
   authView.value = 'none';
+};
+
+const refreshUser = () => {
+  
 };
 </script>
