@@ -804,9 +804,6 @@ def reschedule_booking(request, booking_id):
             return JsonResponse({"error": str(e)}, status=500)
     return JsonResponse({"error": "PATCH only"}, status=405)
 
-
-# ── Waitlist Functions ─────────────────────────────────────────────────────────
-
 @csrf_exempt
 def add_to_waitlist(request):
     if request.method != 'POST':
@@ -827,7 +824,6 @@ def add_to_waitlist(request):
         preferred_date = data.get('preferred_date')
         preferred_time = data.get('preferred_time')
         
-        # Check if already on waitlist
         with connection.cursor() as cursor:
             cursor.execute("""
                 SELECT id FROM waitlist 
@@ -905,7 +901,6 @@ def remove_from_waitlist(request, waitlist_id):
 def check_and_notify_waitlist(service_id, provider_id, available_date):
     """Check waitlist and notify next user (they have 4 hours to claim)"""
     with connection.cursor() as cursor:
-        # Get first waiting user
         cursor.execute("""
             SELECT id, user_id, preferred_date, preferred_time
             FROM waitlist 
@@ -919,7 +914,6 @@ def check_and_notify_waitlist(service_id, provider_id, available_date):
             waitlist_id = row[0]
             user_id = row[1]
             
-            # Create notification with special token
             token = str(uuid.uuid4())
             cursor.execute("""
                 UPDATE waitlist SET notified_at = NOW(), status = 'notified'
@@ -933,7 +927,6 @@ def check_and_notify_waitlist(service_id, provider_id, available_date):
                 f"Pakalpojumam '{svc['name']}' ir atbrīvojusies vieta. Jums ir 4 stundas, lai rezervētu šo vietu. Spiediet 'Apstiprināt' zem šī paziņojuma."
             )
             
-            # Store the offer token for later claim
             cursor.execute("""
                 INSERT INTO waitlist_offers (waitlist_id, user_id, service_id, token, expires_at)
                 VALUES (%s, %s, %s, %s, NOW() + INTERVAL '4 hours')
@@ -960,7 +953,6 @@ def claim_waitlist_spot(request):
         date = data.get('date')
         time = data.get('time')
         
-        # Verify this is the user who was notified
         with connection.cursor() as cursor:
             cursor.execute("""
                 SELECT w.user_id, wo.token, wo.expires_at
@@ -975,19 +967,408 @@ def claim_waitlist_spot(request):
             if row[0] != user_id:
                 return JsonResponse({"error": "Unauthorized"}, status=401)
             
-            # Create the booking
             svc = get_service(service_id)
             cursor.execute("""
                 INSERT INTO reservations (user_id, service_name, res_date, res_time, provider_id, service_id, booked_price)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, [user_id, svc['name'], date, time, svc['provider_id'], service_id, svc['price']])
             
-            # Mark waitlist as claimed
             cursor.execute("UPDATE waitlist SET status = 'claimed' WHERE id = %s", [waitlist_id])
             
-            # Clean up offers
             cursor.execute("DELETE FROM waitlist_offers WHERE waitlist_id = %s", [waitlist_id])
         
         return JsonResponse({"status": "booking_created"})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+    
+
+def check_admin(token):
+    user_id = get_user_from_token(token)
+    if not user_id:
+        return None, False
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT roles FROM auth_user WHERE id = %s", [user_id])
+        row = cursor.fetchone()
+        if not row or row[0] != 1:
+            return user_id, False
+        return user_id, True
+
+@csrf_exempt
+def admin_stats(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return JsonResponse({"error": "Unauthorized"}, status=401)
+    token = auth_header.split(' ')[1]
+    user_id, is_admin = check_admin(token)
+    if not is_admin:
+        return JsonResponse({"error": "Admin access required"}, status=403)
+    
+    try:
+        with connection.cursor() as cursor:
+            # User counts
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as total,
+                    SUM(CASE WHEN roles = 1 THEN 1 ELSE 0 END) as admins,
+                    SUM(CASE WHEN roles = 2 THEN 1 ELSE 0 END) as providers,
+                    SUM(CASE WHEN roles = 3 THEN 1 ELSE 0 END) as clients
+                FROM auth_user
+            """)
+            row = cursor.fetchone()
+            stats = {
+                "total_users": row[0],
+                "admins": row[1] or 0,
+                "providers": row[2] or 0,
+                "clients": row[3] or 0,
+            }
+            
+            # Booking counts
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as total,
+                    SUM(CASE WHEN status = 'upcoming' THEN 1 ELSE 0 END) as upcoming,
+                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+                    SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
+                    COALESCE(SUM(booked_price), 0) as revenue
+                FROM reservations
+            """)
+            row = cursor.fetchone()
+            stats["total_bookings"] = row[0]
+            stats["upcoming_bookings"] = row[1] or 0
+            stats["completed_bookings"] = row[2] or 0
+            stats["cancelled_bookings"] = row[3] or 0
+            stats["total_revenue"] = float(row[4] or 0)
+            
+            # Total services
+            cursor.execute("SELECT COUNT(*) FROM services")
+            stats["total_services"] = cursor.fetchone()[0]
+            
+            # Recent bookings (last 10)
+            cursor.execute("""
+                SELECT r.id, r.service_name, r.res_date, r.res_time, r.status,
+                       u.username as client, p.username as provider, r.booked_price
+                FROM reservations r
+                JOIN auth_user u ON u.id = r.user_id
+                JOIN auth_user p ON p.id = r.provider_id
+                ORDER BY r.res_date DESC, r.res_time DESC
+                LIMIT 10
+            """)
+            recent = []
+            for row in cursor.fetchall():
+                recent.append({
+                    "id": row[0],
+                    "service": row[1],
+                    "date": str(row[2]),
+                    "time": str(row[3])[:5] if row[3] else '',
+                    "status": row[4],
+                    "client": row[5],
+                    "provider": row[6],
+                    "price": float(row[7]) if row[7] else None,
+                })
+            stats["recent_bookings"] = recent
+            
+            # Monthly bookings chart (last 6 months)
+            cursor.execute("""
+                SELECT 
+                    TO_CHAR(DATE_TRUNC('month', res_date), 'YYYY-MM') as month,
+                    COUNT(*) as count,
+                    COALESCE(SUM(booked_price), 0) as revenue
+                FROM reservations
+                WHERE res_date >= NOW() - INTERVAL '6 months'
+                GROUP BY DATE_TRUNC('month', res_date)
+                ORDER BY month ASC
+            """)
+            monthly = []
+            for row in cursor.fetchall():
+                monthly.append({
+                    "month": row[0],
+                    "count": row[1],
+                    "revenue": float(row[2]),
+                })
+            stats["monthly_stats"] = monthly
+            
+            # Top services
+            cursor.execute("""
+                SELECT r.service_name, COUNT(*) as count, COALESCE(SUM(r.booked_price), 0) as revenue
+                FROM reservations r
+                GROUP BY r.service_name
+                ORDER BY count DESC
+                LIMIT 5
+            """)
+            top_services = []
+            for row in cursor.fetchall():
+                top_services.append({
+                    "name": row[0],
+                    "count": row[1],
+                    "revenue": float(row[2]),
+                })
+            stats["top_services"] = top_services
+            
+        return JsonResponse(stats)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@csrf_exempt
+def admin_get_users(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return JsonResponse({"error": "Unauthorized"}, status=401)
+    token = auth_header.split(' ')[1]
+    _, is_admin = check_admin(token)
+    if not is_admin:
+        return JsonResponse({"error": "Admin access required"}, status=403)
+    
+    try:
+        role_filter = request.GET.get('role', '')
+        with connection.cursor() as cursor:
+            query = """
+                SELECT id, username, email, roles, industry, description, 
+                       phone, address, reg_number, is_active, date_joined
+                FROM auth_user
+            """
+            params = []
+            if role_filter and role_filter != 'all':
+                query += " WHERE roles = %s"
+                params.append(role_filter)
+            query += " ORDER BY id DESC"
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+        
+        users = []
+        for row in rows:
+            users.append({
+                "id": row[0],
+                "username": row[1],
+                "email": row[2],
+                "roles": row[3],
+                "industry": row[4] or '',
+                "description": row[5] or '',
+                "phone": row[6] or '',
+                "address": row[7] or '',
+                "reg_number": row[8] or '',
+                "is_active": row[9],
+                "date_joined": str(row[10])[:10] if row[10] else '',
+            })
+        return JsonResponse(users, safe=False)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@csrf_exempt
+def admin_update_user(request, user_id):
+    if request.method != 'PUT':
+        return JsonResponse({"error": "PUT only"}, status=405)
+    
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return JsonResponse({"error": "Unauthorized"}, status=401)
+    token = auth_header.split(' ')[1]
+    _, is_admin = check_admin(token)
+    if not is_admin:
+        return JsonResponse({"error": "Admin access required"}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                UPDATE auth_user 
+                SET username = %s, email = %s, roles = %s, industry = %s,
+                    description = %s, phone = %s, address = %s, reg_number = %s,
+                    is_active = %s
+                WHERE id = %s
+            """, [
+                data.get('username'), data.get('email'), data.get('roles'),
+                data.get('industry', ''), data.get('description', ''),
+                data.get('phone', ''), data.get('address', ''),
+                data.get('reg_number', ''), data.get('is_active', True),
+                user_id
+            ])
+        return JsonResponse({"status": "success"})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@csrf_exempt
+def admin_delete_user(request, user_id):
+    if request.method != 'DELETE':
+        return JsonResponse({"error": "DELETE only"}, status=405)
+    
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return JsonResponse({"error": "Unauthorized"}, status=401)
+    token = auth_header.split(' ')[1]
+    _, is_admin = check_admin(token)
+    if not is_admin:
+        return JsonResponse({"error": "Admin access required"}, status=403)
+    
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM auth_user WHERE id = %s", [user_id])
+        return JsonResponse({"status": "success"})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@csrf_exempt
+def admin_get_services(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return JsonResponse({"error": "Unauthorized"}, status=401)
+    token = auth_header.split(' ')[1]
+    _, is_admin = check_admin(token)
+    if not is_admin:
+        return JsonResponse({"error": "Admin access required"}, status=403)
+    
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT s.id, s.name, s.price, s.description, s.duration_minutes,
+                       s.work_days, s.work_start, s.work_end, s.provider_id,
+                       u.username as provider_name
+                FROM services s
+                JOIN auth_user u ON u.id = s.provider_id
+                ORDER BY s.id DESC
+            """)
+            rows = cursor.fetchall()
+        
+        services = []
+        for row in rows:
+            services.append({
+                "id": row[0],
+                "name": row[1],
+                "price": float(row[2]),
+                "description": row[3] or '',
+                "duration_minutes": row[4] or 60,
+                "work_days": row[5] or '1,2,3,4,5',
+                "work_start": str(row[6])[:5] if row[6] else '09:00',
+                "work_end": str(row[7])[:5] if row[7] else '17:00',
+                "provider_id": row[8],
+                "provider_name": row[9],
+            })
+        return JsonResponse(services, safe=False)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@csrf_exempt
+def admin_delete_service(request, service_id):
+    if request.method != 'DELETE':
+        return JsonResponse({"error": "DELETE only"}, status=405)
+    
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return JsonResponse({"error": "Unauthorized"}, status=401)
+    token = auth_header.split(' ')[1]
+    _, is_admin = check_admin(token)
+    if not is_admin:
+        return JsonResponse({"error": "Admin access required"}, status=403)
+    
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM services WHERE id = %s", [service_id])
+        return JsonResponse({"status": "success"})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@csrf_exempt
+def admin_get_bookings(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return JsonResponse({"error": "Unauthorized"}, status=401)
+    token = auth_header.split(' ')[1]
+    _, is_admin = check_admin(token)
+    if not is_admin:
+        return JsonResponse({"error": "Admin access required"}, status=403)
+    
+    try:
+        status_filter = request.GET.get('status', '')
+        with connection.cursor() as cursor:
+            query = """
+                SELECT r.id, r.service_name, r.res_date, r.res_time, r.res_end_time,
+                       r.status, r.booked_price,
+                       u.username as client, p.username as provider,
+                       r.user_id, r.provider_id, r.service_id
+                FROM reservations r
+                JOIN auth_user u ON u.id = r.user_id
+                JOIN auth_user p ON p.id = r.provider_id
+            """
+            params = []
+            if status_filter and status_filter != 'all':
+                query += " WHERE r.status = %s"
+                params.append(status_filter)
+            query += " ORDER BY r.res_date DESC, r.res_time DESC"
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+        
+        bookings = []
+        for row in rows:
+            bookings.append({
+                "id": row[0],
+                "service": row[1],
+                "date": str(row[2]),
+                "time": str(row[3])[:5] if row[3] else '',
+                "end_time": str(row[4])[:5] if row[4] else '',
+                "status": row[5] or 'upcoming',
+                "price": float(row[6]) if row[6] else None,
+                "client": row[7],
+                "provider": row[8],
+                "client_id": row[9],
+                "provider_id": row[10],
+                "service_id": row[11],
+            })
+        return JsonResponse(bookings, safe=False)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@csrf_exempt
+def admin_update_booking(request, booking_id):
+    if request.method != 'PUT':
+        return JsonResponse({"error": "PUT only"}, status=405)
+    
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return JsonResponse({"error": "Unauthorized"}, status=401)
+    token = auth_header.split(' ')[1]
+    _, is_admin = check_admin(token)
+    if not is_admin:
+        return JsonResponse({"error": "Admin access required"}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                UPDATE reservations 
+                SET service_name = %s, res_date = %s, res_time = %s,
+                    status = %s, booked_price = %s
+                WHERE id = %s
+            """, [
+                data.get('service'), data.get('date'), data.get('time'),
+                data.get('status'), data.get('price'), booking_id
+            ])
+        return JsonResponse({"status": "success"})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@csrf_exempt
+def admin_delete_booking(request, booking_id):
+    if request.method != 'DELETE':
+        return JsonResponse({"error": "DELETE only"}, status=405)
+    
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return JsonResponse({"error": "Unauthorized"}, status=401)
+    token = auth_header.split(' ')[1]
+    _, is_admin = check_admin(token)
+    if not is_admin:
+        return JsonResponse({"error": "Admin access required"}, status=403)
+    
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM reservations WHERE id = %s", [booking_id])
+        return JsonResponse({"status": "success"})
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)

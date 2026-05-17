@@ -1,6 +1,6 @@
 <template>
-  <div class="dashboard-container">
-    <header class="dashboard-nav">
+  <div :class="['dashboard-container', { 'admin-mode': user.roles === 1 }]">
+    <header class="dashboard-nav" v-if="user.roles !== 1">
       <div class="nav-tabs">
         <button
           :class="{ active: activeTab === 'main' }"
@@ -28,8 +28,10 @@
     </header>
 
     <main class="dashboard-content">
+      <AdminPanel v-if="user.roles === 1" :user="user" />
+      
       <ProviderDashboard
-        v-if="user.roles === 2"
+        v-else-if="user.roles === 2"
         :user="user"
         :active-tab="activeTab"
         @change-tab="activeTab = $event"
@@ -46,10 +48,24 @@
 
 <script setup>
 import { ref } from 'vue';
+import AdminPanel from './AdminPanel.vue';
 import ProviderDashboard from './ProviderDashboard.vue';
-import ClientDashboard   from './ClientDashboard.vue';
+import ClientDashboard from './ClientDashboard.vue';
 
 defineProps({ user: Object });
 
 const activeTab = ref('main');
 </script>
+
+<style scoped>
+.dashboard-container.admin-mode {
+  padding: 0;
+  margin: 0;
+  max-width: 100%;
+}
+
+.dashboard-container.admin-mode .dashboard-content {
+  padding: 0;
+  margin: 0;
+}
+</style>

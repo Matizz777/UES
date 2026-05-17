@@ -12,6 +12,9 @@
           <button class="profile-btn" @click="$emit('show-profile')" title="Profils">
             👤
           </button>
+          <button v-if="user && user.roles === 1" class="admin-btn" @click="$emit('show-admin')">
+            👑 Admin
+          </button>
 
           <div class="user-info">
             <div class="avatar">{{ user.username[0].toUpperCase() }}</div>

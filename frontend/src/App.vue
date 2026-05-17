@@ -37,7 +37,6 @@
     @close="showProfileModal = false"
   />
 
-  <!-- Authenticated dashboard -->
   <Dashboard v-else-if="user" :user="user" />
 
   <div class="clouds-container">
@@ -55,11 +54,12 @@ import LoginForm   from './components/LoginForm.vue';
 import RegisterForm from './components/RegisterForm.vue';
 import Dashboard   from './components/Dashboard.vue';
 import ProfileModal from './components/ProfileModal.vue';
+import AdminPanel from './components/AdminPanel.vue';
 
 import './assets/style.css';
 
 const user     = ref(null);
-const authView = ref('none'); // 'none' | 'login' | 'register'
+const authView = ref('none');
 const showProfileModal = ref(false);
 
 onMounted(() => {

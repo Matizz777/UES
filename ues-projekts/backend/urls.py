@@ -28,4 +28,13 @@ urlpatterns = [
     path('api/waitlist/status/', views.get_waitlist_status, name='waitlist-status'),
     path('api/waitlist/remove/<int:waitlist_id>/', views.remove_from_waitlist, name='remove-waitlist'),
     path('api/waitlist/claim/', views.claim_waitlist_spot, name='claim-waitlist'),
+    path('api/admin/stats/', views.admin_stats, name='admin-stats'),
+    path('api/admin/users/', views.admin_get_users, name='admin-users'),
+    path('api/admin/users/<int:user_id>/', views.admin_update_user, name='admin-update-user'),
+    path('api/admin/users/delete/<int:user_id>/', views.admin_delete_user, name='admin-delete-user'),
+    path('api/admin/services/', views.admin_get_services, name='admin-services'),
+    path('api/admin/services/delete/<int:service_id>/', views.admin_delete_service, name='admin-delete-service'),
+    path('api/admin/bookings/', views.admin_get_bookings, name='admin-bookings'),
+    path('api/admin/bookings/<int:booking_id>/', views.admin_update_booking, name='admin-update-booking'),
+    path('api/admin/bookings/delete/<int:booking_id>/', views.admin_delete_booking, name='admin-delete-booking'),
 ]
