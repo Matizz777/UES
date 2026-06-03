@@ -1,31 +1,31 @@
 <template>
   <div class="form-container">
     <div class="register-card">
-      <h2>Pieslēgties</h2>
+      <h2>{{ $t('login') }}</h2>
 
       <div v-if="errorMsg" class="error-banner">{{ errorMsg }}</div>
 
       <input
         type="text"
         v-model="credentials.username"
-        placeholder="Lietotājvārds"
+        :placeholder="$t('username')"
         @keyup.enter="submit"
       />
       <input
         type="password"
         v-model="credentials.password"
-        placeholder="Parole"
+        :placeholder="$t('password')"
         @keyup.enter="submit"
       />
 
       <button class="btn-register" @click="submit" :disabled="loading">
-        {{ loading ? 'Lādē...' : 'Pieslēgties' }}
+        {{ loading ? $t('loading') : $t('login') }}
       </button>
 
       <p class="back-link" @click="$emit('go-register')">
-        Nav konta? <span class="link-accent">Reģistrēties</span>
+        {{ $t('no_account') }} <span class="link-accent">{{ $t('register_now') }}</span>
       </p>
-      <p class="back-link" @click="$emit('back')">← Atpakaļ uz sākumu</p>
+      <p class="back-link" @click="$emit('back')">← {{ $t('back') }}</p>
     </div>
   </div>
 </template>

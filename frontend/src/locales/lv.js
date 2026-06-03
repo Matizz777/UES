@@ -1,0 +1,157 @@
+export default {
+  // Navbar
+  profile: "Profils",
+  logout: "Iziet",
+  admin: "Admin",
+  provider: "Pakalpojuma sniedzējs",
+  client: "Klients",
+  
+  // Common
+  save: "Saglabāt",
+  cancel: "Atcelt",
+  back: "Atpakaļ",
+  confirm: "Apstiprināt",
+  delete: "Dzēst",
+  edit: "Labot",
+  add: "Pievienot",
+  search: "Meklēt...",
+  loading: "Ielādē...",
+  no_data: "Dati nav atrasti",
+  
+  // Login/Register
+  login: "Pieslēgties",
+  register: "Reģistrēties",
+  username: "Lietotājvārds",
+  password: "Parole",
+  email: "E-pasts",
+  confirm_password: "Atkārtot paroli",
+  forgot_password: "Aizmirsāt paroli?",
+  no_account: "Nav konta?",
+  has_account: "Jau ir konts?",
+  register_now: "Reģistrēties",
+  login_now: "Pieslēgties",
+  
+  // Dashboard
+  provider_panel: "Speciālista panelis",
+  find_provider: "Atrast speciālistu",
+  my_calendar: "Mans kalendārs",
+  my_bookings: "Mani pieraksti",
+  welcome: "Sveiki",
+  manage_services: "Pārvaldiet savus pakalpojumus un pieejamību",
+  
+  // Services
+  add_service: "Pievienot pakalpojumu",
+  service_name: "Pakalpojuma nosaukums",
+  service_price: "Cena",
+  service_description: "Apraksts (neobligāti)",
+  duration_minutes: "Ilgums (minūtes)",
+  working_hours: "Darba laiks",
+  working_days: "Darba dienas",
+  my_services: "Mani pakalpojumi",
+  no_services: "Vēl nav pievienots neviens pakalpojums",
+  edit_service: "Labot pakalpojumu",
+  delete_service: "Dzēst pakalpojumu",
+  confirm_delete_service: "Vai tiešām vēlaties dzēst šo pakalpojumu?",
+  
+  // Booking
+  booking: "Rezervācija",
+  select_service: "Izvēlieties pakalpojumu",
+  select_date: "Izvēlieties datumu",
+  select_time: "Izvēlieties laiku",
+  available_times: "Pieejamie laiki",
+  no_times_available: "Šajā dienā nav pieejamu laiku",
+  confirm_booking: "Apstiprināt rezervāciju",
+  booking_confirmed: "Rezervācija apstiprināta!",
+  booking_details: "Rezervācijas detaļas",
+  specialist: "Speciālists",
+  industry: "Nozare",
+  duration: "Ilgums",
+  price: "Cena",
+  address: "Adrese",
+  phone: "Tālrunis",
+  description_label: "Apraksts",
+  price_fixed_note: "Cena tiek fiksēta rezervācijas brīdī",
+  add_to_waitlist: "Pievienot gaidīšanas sarakstam",
+  added_to_waitlist: "Pievienots gaidīšanas sarakstam",
+  
+  // Reservation list
+  upcoming: "Gaidāms",
+  completed: "Pabeigts",
+  cancelled: "Atcelts",
+  reschedule: "Pārcelt",
+  cancel_booking: "Atcelt pierakstu",
+  confirm_cancel: "Vai tiešām vēlaties atcelt šo pierakstu?",
+  cannot_reschedule: "Nevar pārcelt - mazāk par 24h līdz pierakstam",
+  
+  // Provider Calendar
+  provider_calendar: "Speciālista kalendārs",
+  no_bookings_this_day: "Nav rezervāciju šajā dienā",
+  client: "Klients",
+  
+  // Admin Panel
+  admin_panel: "Admin Panelis",
+  dashboard: "Panelis",
+  users: "Lietotāji",
+  services_admin: "Pakalpojumi",
+  bookings_admin: "Pieraksti",
+  total_users: "Kopā lietotāju",
+  total_services: "Kopā pakalpojumu",
+  total_bookings: "Kopā pierakstu",
+  total_revenue: "Kopējais apgrozījums",
+  upcoming_bookings: "Gaidāmie",
+  popular_services: "Populārākie pakalpojumi",
+  monthly_stats: "Ikmēneša statistika",
+  recent_bookings: "Pēdējie pieraksti",
+  all_bookings: "Visi pieraksti",
+  
+  // Profile
+  profile_info: "Profila informācija",
+  change_password: "Mainīt paroli",
+  business_info: "Biznesa informācija",
+  first_name: "Vārds",
+  last_name: "Uzvārds",
+  old_password: "Vecā parole",
+  new_password: "Jaunā parole",
+  registration_number: "Reģistrācijas numurs",
+  industry_field: "Nozare",
+  profile_updated: "Profils veiksmīgi saglabāts!",
+  password_changed: "Parole veiksmīgi mainīta!",
+  
+  // Notifications
+  notifications: "Paziņojumi",
+  mark_all_read: "Atzīmēt visus kā lasītus",
+  no_notifications: "Nav jaunu paziņojumu",
+  spot_available: "Vieta atbrīvojusies!",
+  spot_available_message: "Ir atbrīvojusies vieta pakalpojumam",
+  you_have_hours: "Jums ir 4 stundas, lai to apstiprinātu",
+  
+  // Errors
+  error_fill_fields: "Lūdzu, aizpildiet visus laukus",
+  error_invalid_credentials: "Nepareizs lietotājvārds vai parole",
+  error_server: "Servera kļūda. Lūdzu, mēģiniet vēlreiz",
+  error_booking_failed: "Rezervācija neizdevās",
+  error_loading: "Kļūda ielādējot datus",
+  
+  // Days
+  monday: "Pr",
+  tuesday: "Ot",
+  wednesday: "Tr",
+  thursday: "Ce",
+  friday: "Pk",
+  saturday: "Se",
+  sunday: "Sv",
+  
+  // Months
+  january: "Jan",
+  february: "Feb",
+  march: "Mar",
+  april: "Apr",
+  may: "Mai",
+  june: "Jūn",
+  july: "Jūl",
+  august: "Aug",
+  september: "Sep",
+  october: "Okt",
+  november: "Nov",
+  december: "Dec"
+}

@@ -7,8 +7,35 @@ from datetime import datetime, timedelta
 import uuid
 import pytz
 from django.utils import timezone
+from django.utils.translation import gettext as _
+from django.utils.translation import activate
+from django.shortcuts import redirect
+from django.conf import settings
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
+def set_language(request, language_code):
+    if language_code in dict(settings.LANGUAGES):
+        activate(language_code)
+        request.session['django_language'] = language_code
+        response = redirect(request.META.get('HTTP_REFERER', '/'))
+        response.set_cookie('django_language', language_code, max_age=365*24*60*60)
+        return response
+    return redirect('/')
+
+def api_set_language(request):
+    try:
+        data = json.loads(request.body)
+        language_code = data.get('language')
+        
+        if language_code in dict(settings.LANGUAGES):
+            activate(language_code)
+            request.session['django_language'] = language_code
+            response = JsonResponse({'status': 'success'})
+            response.set_cookie('django_language', language_code, max_age=365*24*60*60)
+            return response
+        
+        return JsonResponse({'status': 'error', 'message': _('Invalid language')}, status=400)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
 def get_user_from_token(token):
     with connection.cursor() as cursor:
@@ -87,9 +114,6 @@ def fmt_time(t):
     if not t: return ''
     return t.strftime("%H:%M") if hasattr(t, 'strftime') else str(t)[:5]
 
-
-# ── Auth ─────────────────────────────────────────────────────────────────────
-
 @csrf_exempt
 def register_user(request):
     if request.method == 'POST':
@@ -102,7 +126,7 @@ def register_user(request):
                     INSERT INTO auth_user
                     (username, email, password, roles, industry, description,
                      first_name, last_name, is_active, date_joined, session_token,
-                     phone, address, reg_number)  -- PIEVIENOTS
+                     phone, address, reg_number)
                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id
                 """, [
                     username, data.get('email'),
@@ -133,15 +157,12 @@ def login_user(request):
                 )
                 user = cursor.fetchone()
             if not user or not check_password(data.get('password'), user[2]):
-                return JsonResponse({"error": "Nepareizs lietotājvārds vai parole."}, status=400)
+                return JsonResponse({"error": _("Nepareizs lietotājvārds vai parole.")}, status=400)
             return JsonResponse({"id": user[0], "username": user[1],
                                  "roles": user[3], "token": user[4]})
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
-    return JsonResponse({"error": "POST only"}, status=405)
-
-
-# ── Services ──────────────────────────────────────────────────────────────────
+    return JsonResponse({"error": _("POST only")}, status=405)
 
 @csrf_exempt
 def add_service(request):
@@ -170,7 +191,7 @@ def add_service(request):
 def get_my_services(request):
     provider_id = request.GET.get('provider_id')
     if not provider_id:
-        return JsonResponse({"error": "Nav provider_id"}, status=400)
+        return JsonResponse({"error": _("Nav provider_id")}, status=400)
     try:
         with connection.cursor() as cursor:
             cursor.execute("""
@@ -213,7 +234,7 @@ def edit_service(request, service_id):
             return JsonResponse({"status": "success"})
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
-    return JsonResponse({"error": "PUT only"}, status=405)
+    return JsonResponse({"error": _("PUT only")}, status=405)
 
 @csrf_exempt
 def delete_service(request, service_id):
@@ -224,10 +245,7 @@ def delete_service(request, service_id):
             return JsonResponse({"status": "success"})
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
-    return JsonResponse({"error": "DELETE only"}, status=405)
-
-
-# ── Catalog ───────────────────────────────────────────────────────────────────
+    return JsonResponse({"error": _("DELETE only")}, status=405)
 
 @csrf_exempt
 def get_providers(request):
@@ -262,17 +280,14 @@ def get_providers(request):
             } for s in s_rows]
             result.append({
                 "id": p_id, "username": row[1],
-                "industry":    row[2] or 'Nav norādīta',
-                "description": row[3] or 'Nav apraksta.',
+                "industry":    row[2] or _('Nav norādīta'),
+                "description": row[3] or _('Nav apraksta.'),
                 "phone":       row[4] or '',
                 "address":     row[5] or '',
                 "reg_number":  row[6] or '',
                 "services":    p_services
             })
     return JsonResponse(result, safe=False)
-
-
-# ── Booking ───────────────────────────────────────────────────────────────────
 
 @csrf_exempt
 def get_occupied_times(request):
@@ -308,19 +323,18 @@ def get_occupied_times(request):
         import traceback; traceback.print_exc()
         return JsonResponse({"error": str(e)}, status=500)
 
-
 @csrf_exempt
 def save_booking(request):
     if request.method == 'POST':
         try:
             auth_header = request.headers.get('Authorization')
             if not auth_header:
-                return JsonResponse({"error": "Nav autorizācijas"}, status=401)
+                return JsonResponse({"error": _("Nav autorizācijas")}, status=401)
             token   = auth_header.split(' ')[1]
             data    = json.loads(request.body)
             user_id = get_user_from_token(token)
             if not user_id:
-                return JsonResponse({"error": "Sesija nederīga"}, status=401)
+                return JsonResponse({"error": _("Sesija nederīga")}, status=401)
 
             service_id   = data.get('service_id')
             provider_id  = data.get('provider_id')
@@ -336,7 +350,7 @@ def save_booking(request):
 
             booked_blocks = get_booked_blocks(provider_id, date_str)
             if slot_overlaps(time_str, end_str, booked_blocks):
-                return JsonResponse({"error": "Šis laiks jau ir rezervēts."}, status=409)
+                return JsonResponse({"error": _("Šis laiks jau ir rezervēts.")}, status=409)
 
             with connection.cursor() as cursor:
                 cursor.execute("""
@@ -346,12 +360,11 @@ def save_booking(request):
                 """, [user_id, service_name, date_str, time_str, end_str,
                     provider_id, service_id, booked_price, 'upcoming'])
 
-            return JsonResponse({"message": "Rezervācija saglabāta!"}, status=201)
+            return JsonResponse({"message": _("Rezervācija saglabāta!")}, status=201)
         except Exception as e:
             import traceback; traceback.print_exc()
             return JsonResponse({"error": str(e)}, status=500)
-    return JsonResponse({"error": "POST only"}, status=405)
-
+    return JsonResponse({"error": _("POST only")}, status=405)
 
 @csrf_exempt
 def get_user_reservations(request):
@@ -361,7 +374,7 @@ def get_user_reservations(request):
         role    = request.GET.get('role', '3')
         user_id = get_user_from_token(token)
         if not user_id:
-            return JsonResponse({"error": "Unauthorized"}, status=401)
+            return JsonResponse({"error": _("Unauthorized")}, status=401)
 
         with connection.cursor() as cursor:
             if role == '2':
@@ -402,18 +415,15 @@ def get_user_reservations(request):
         import traceback; traceback.print_exc()
         return JsonResponse({"error": str(e)}, status=500)
 
-
-# ── Provider calendar ─────────────────────────────────────────────────────────
-
 @csrf_exempt
 def get_provider_calendar(request):
     auth_header = request.headers.get('Authorization')
     if not auth_header:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     token = auth_header.split(' ')[1]
     user_id = get_user_from_token(token)
     if not user_id:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
 
     year = request.GET.get('year')
     month = request.GET.get('month')
@@ -448,7 +458,6 @@ def get_provider_calendar(request):
         traceback.print_exc()
         return JsonResponse({"error": str(e)}, status=500)
 
-
 @csrf_exempt
 def add_availability(request):
     if request.method == 'POST':
@@ -458,11 +467,11 @@ def add_availability(request):
 def get_notifications(request):
     auth_header = request.headers.get('Authorization')
     if not auth_header:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     token   = auth_header.split(' ')[1]
     user_id = get_user_from_token(token)
     if not user_id:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     try:
         with connection.cursor() as cursor:
             cursor.execute("""
@@ -483,18 +492,17 @@ def get_notifications(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
  
- 
 @csrf_exempt
 def mark_notifications_read(request):
     if request.method != 'POST':
-        return JsonResponse({"error": "POST only"}, status=405)
+        return JsonResponse({"error": _("POST only")}, status=405)
     auth_header = request.headers.get('Authorization')
     if not auth_header:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     token   = auth_header.split(' ')[1]
     user_id = get_user_from_token(token)
     if not user_id:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     try:
         with connection.cursor() as cursor:
             cursor.execute(
@@ -505,11 +513,10 @@ def mark_notifications_read(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
  
- 
 @csrf_exempt
 def delete_notification(request, notif_id):
     if request.method != 'DELETE':
-        return JsonResponse({"error": "DELETE only"}, status=405)
+        return JsonResponse({"error": _("DELETE only")}, status=405)
     try:
         with connection.cursor() as cursor:
             cursor.execute("DELETE FROM notifications WHERE id = %s", [notif_id])
@@ -521,11 +528,11 @@ def delete_notification(request, notif_id):
 def get_profile(request):
     auth_header = request.headers.get('Authorization')
     if not auth_header:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     token = auth_header.split(' ')[1]
     user_id = get_user_from_token(token)
     if not user_id:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     
     try:
         with connection.cursor() as cursor:
@@ -538,7 +545,7 @@ def get_profile(request):
             row = cursor.fetchone()
         
         if not row:
-            return JsonResponse({"error": "User not found"}, status=404)
+            return JsonResponse({"error": _("User not found")}, status=404)
         
         return JsonResponse({
             "id": row[0],
@@ -556,25 +563,23 @@ def get_profile(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-
 @csrf_exempt
 def update_profile(request):
     if request.method != 'PUT':
-        return JsonResponse({"error": "PUT only"}, status=405)
+        return JsonResponse({"error": _("PUT only")}, status=405)
     
     auth_header = request.headers.get('Authorization')
     if not auth_header:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     token = auth_header.split(' ')[1]
     user_id = get_user_from_token(token)
     if not user_id:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     
     try:
         data = json.loads(request.body)
         
         with connection.cursor() as cursor:
-            # Base update query
             cursor.execute("""
                 UPDATE auth_user 
                 SET email = %s, 
@@ -602,19 +607,18 @@ def update_profile(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-
 @csrf_exempt
 def change_password(request):
     if request.method != 'PUT':
-        return JsonResponse({"error": "PUT only"}, status=405)
+        return JsonResponse({"error": _("PUT only")}, status=405)
     
     auth_header = request.headers.get('Authorization')
     if not auth_header:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     token = auth_header.split(' ')[1]
     user_id = get_user_from_token(token)
     if not user_id:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     
     try:
         data = json.loads(request.body)
@@ -629,7 +633,7 @@ def change_password(request):
             row = cursor.fetchone()
         
         if not row or not check_password(old_password, row[0]):
-            return JsonResponse({"error": "Nepareiza vecā parole"}, status=400)
+            return JsonResponse({"error": _("Nepareiza vecā parole")}, status=400)
         
         with connection.cursor() as cursor:
             cursor.execute(
@@ -640,9 +644,6 @@ def change_password(request):
         return JsonResponse({"status": "success"})
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
-
-
-# ── Updated cancel_booking with 24h check and waitlist notification ──────────
 
 @csrf_exempt
 def cancel_booking(request, booking_id):
@@ -663,10 +664,10 @@ def cancel_booking(request, booking_id):
                 row = cursor.fetchone()
             
             if not row:
-                return JsonResponse({"error": "Pieraksts nav atrasts."}, status=404)
+                return JsonResponse({"error": _("Pieraksts nav atrasts.")}, status=404)
             
             if row[7] == 'cancelled':
-                return JsonResponse({"error": "Pieraksts jau ir atcelts."}, status=400)
+                return JsonResponse({"error": _("Pieraksts jau ir atcelts.")}, status=400)
             
             client_id = row[0]
             service_name = row[1]
@@ -674,21 +675,21 @@ def cancel_booking(request, booking_id):
             res_time = str(row[3])[:5]
             provider_id = row[4]
             service_id = row[5]
-            provider_name = row[6] or 'Speciālists'
+            provider_name = row[6] or _('Speciālists')
             
             with connection.cursor() as cursor2:
                 cursor2.execute("SELECT username FROM auth_user WHERE id = %s", [client_id])
                 client_username = cursor2.fetchone()[0]
             
             if is_client_cancel:
-                title = f"Pieraksts atcelts — {service_name}"
-                message = f"Klients {client_username} ir atcēlis pierakstu ({service_name}, {res_date} {res_time})."
+                title = f"{_('Pieraksts atcelts')} — {service_name}"
+                message = f"{_('Klients')} {client_username} {_('ir atcēlis pierakstu')} ({service_name}, {res_date} {res_time})."
                 create_notification(provider_id, title, message)
             else:
-                title = f"Pieraksts atcelts — {service_name}"
-                message = f"Jūsu pieraksts pie {provider_name} ({service_name}, {res_date} {res_time}) ir atcelts."
+                title = f"{_('Pieraksts atcelts')} — {service_name}"
+                message = f"{_('Jūsu pieraksts pie')} {provider_name} ({service_name}, {res_date} {res_time}) {_('ir atcelts.')}"
                 if reason:
-                    message += f"\n\nIemesls: {reason}"
+                    message += f"\n\n{_('Iemesls')}: {reason}"
                 create_notification(client_id, title, message)
             
             with connection.cursor() as cursor:
@@ -701,10 +702,7 @@ def cancel_booking(request, booking_id):
             import traceback
             traceback.print_exc()
             return JsonResponse({"error": str(e)}, status=500)
-    return JsonResponse({"error": "DELETE only"}, status=405)
-
-
-# ── Updated reschedule_booking with 24h check ────────────────────────────────
+    return JsonResponse({"error": _("DELETE only")}, status=405)
 
 @csrf_exempt
 def reschedule_booking(request, booking_id):
@@ -727,10 +725,10 @@ def reschedule_booking(request, booking_id):
                 row = cursor.fetchone()
             
             if not row:
-                return JsonResponse({"error": "Pieraksts nav atrasts."}, status=404)
+                return JsonResponse({"error": _("Pieraksts nav atrasts.")}, status=404)
             
             if row[7] == 'cancelled':
-                return JsonResponse({"error": "Pieraksts ir atcelts, to nevar pārcelt."}, status=400)
+                return JsonResponse({"error": _("Pieraksts ir atcelts, to nevar pārcelt.")}, status=400)
             
             client_id = row[0]
             service_name = row[1]
@@ -738,7 +736,7 @@ def reschedule_booking(request, booking_id):
             old_time = str(row[3])[:5]
             provider_id = row[4]
             service_id = row[5]
-            provider_name = row[6] or 'Speciālists'
+            provider_name = row[6] or _('Speciālists')
             
             with connection.cursor() as cursor2:
                 cursor2.execute("SELECT username FROM auth_user WHERE id = %s", [client_id])
@@ -751,7 +749,7 @@ def reschedule_booking(request, booking_id):
                 
                 if hours_until_booking < 24 and hours_until_booking > 0:
                     return JsonResponse({
-                        "error": f"Pierakstu var pārcelt ne vēlāk kā 24 stundas pirms tā sākuma. Atlikušas {int(hours_until_booking)} stundas."
+                        "error": _("Pierakstu var pārcelt ne vēlāk kā 24 stundas pirms tā sākuma. Atlikušas {} stundas.").format(int(hours_until_booking))
                     }, status=400)
             
             svc = get_service(service_id) if service_id else None
@@ -767,7 +765,7 @@ def reschedule_booking(request, booking_id):
             
             booked_blocks = [(str(r[0])[:5], str(r[1])[:5]) for r in rows if r[0] and r[1]]
             if slot_overlaps(new_time, end_time, booked_blocks):
-                return JsonResponse({"error": "Izvēlētais laiks pārklājas ar citu rezervāciju."}, status=409)
+                return JsonResponse({"error": _("Izvēlētais laiks pārklājas ar citu rezervāciju.")}, status=409)
             
             with connection.cursor() as cursor:
                 cursor.execute("""
@@ -777,23 +775,23 @@ def reschedule_booking(request, booking_id):
                 """, [new_date, new_time, end_time, booking_id])
             
             if is_client_reschedule:
-                title = f"Pieraksts pārcelts — {service_name}"
+                title = f"{_('Pieraksts pārcelts')} — {service_name}"
                 message = (
-                    f"Klients {client_username} ir pārcēlis pierakstu no {old_date} {old_time} "
-                    f"uz {new_date} {new_time}."
+                    f"{_('Klients')} {client_username} {_('ir pārcēlis pierakstu no')} {old_date} {old_time} "
+                    f"{_('uz')} {new_date} {new_time}."
                 )
                 if reason:
-                    message += f"\n\nIemesls: {reason}"
+                    message += f"\n\n{_('Iemesls')}: {reason}"
                 create_notification(provider_id, title, message)
             else:
-                title = f"Pieraksts pārcelts — {service_name}"
+                title = f"{_('Pieraksts pārcelts')} — {service_name}"
                 message = (
-                    f"Jūsu pieraksts pie {provider_name} ({service_name}) "
-                    f"ir pārcelts no {old_date} {old_time} "
-                    f"uz {new_date} {new_time}."
+                    f"{_('Jūsu pieraksts pie')} {provider_name} ({service_name}) "
+                    f"{_('ir pārcelts no')} {old_date} {old_time} "
+                    f"{_('uz')} {new_date} {new_time}."
                 )
                 if reason:
-                    message += f"\n\nIemesls: {reason}"
+                    message += f"\n\n{_('Iemesls')}: {reason}"
                 create_notification(client_id, title, message)
             
             return JsonResponse({"status": "success"})
@@ -802,20 +800,20 @@ def reschedule_booking(request, booking_id):
             import traceback
             traceback.print_exc()
             return JsonResponse({"error": str(e)}, status=500)
-    return JsonResponse({"error": "PATCH only"}, status=405)
+    return JsonResponse({"error": _("PATCH only")}, status=405)
 
 @csrf_exempt
 def add_to_waitlist(request):
     if request.method != 'POST':
-        return JsonResponse({"error": "POST only"}, status=405)
+        return JsonResponse({"error": _("POST only")}, status=405)
     
     auth_header = request.headers.get('Authorization')
     if not auth_header:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     token = auth_header.split(' ')[1]
     user_id = get_user_from_token(token)
     if not user_id:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     
     try:
         data = json.loads(request.body)
@@ -830,35 +828,33 @@ def add_to_waitlist(request):
                 WHERE user_id = %s AND service_id = %s AND status = 'waiting'
             """, [user_id, service_id])
             if cursor.fetchone():
-                return JsonResponse({"error": "Jūs jau esat gaidīšanas sarakstā"}, status=400)
+                return JsonResponse({"error": _("Jūs jau esat gaidīšanas sarakstā")}, status=400)
             
             cursor.execute("""
                 INSERT INTO waitlist (user_id, service_id, provider_id, preferred_date, preferred_time)
                 VALUES (%s, %s, %s, %s, %s)
             """, [user_id, service_id, provider_id, preferred_date, preferred_time])
         
-        # Notify user they're on waitlist
         svc = get_service(service_id)
         create_notification(
             user_id, 
-            "Pievienots gaidīšanas sarakstam", 
-            f"Jūs esat pievienots gaidīšanas sarakstam pakalpojumam '{svc['name']}'. Kad atbrīvosies vieta, jūs saņemsiet paziņojumu un jums būs 4 stundas, lai to apstiprinātu."
+            _("Pievienots gaidīšanas sarakstam"), 
+            _("Jūs esat pievienots gaidīšanas sarakstam pakalpojumam '{}'. Kad atbrīvosies vieta, jūs saņemsiet paziņojumu un jums būs 4 stundas, lai to apstiprinātu.").format(svc['name'])
         )
         
         return JsonResponse({"status": "added_to_waitlist"})
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-
 @csrf_exempt
 def get_waitlist_status(request):
     auth_header = request.headers.get('Authorization')
     if not auth_header:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     token = auth_header.split(' ')[1]
     user_id = get_user_from_token(token)
     if not user_id:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     
     try:
         with connection.cursor() as cursor:
@@ -884,11 +880,10 @@ def get_waitlist_status(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-
 @csrf_exempt
 def remove_from_waitlist(request, waitlist_id):
     if request.method != 'DELETE':
-        return JsonResponse({"error": "DELETE only"}, status=405)
+        return JsonResponse({"error": _("DELETE only")}, status=405)
     
     try:
         with connection.cursor() as cursor:
@@ -897,9 +892,7 @@ def remove_from_waitlist(request, waitlist_id):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-
 def check_and_notify_waitlist(service_id, provider_id, available_date):
-    """Check waitlist and notify next user (they have 4 hours to claim)"""
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT id, user_id, preferred_date, preferred_time
@@ -923,8 +916,8 @@ def check_and_notify_waitlist(service_id, provider_id, available_date):
             svc = get_service(service_id)
             create_notification(
                 user_id,
-                "🏆 Vieta atbrīvojusies!",
-                f"Pakalpojumam '{svc['name']}' ir atbrīvojusies vieta. Jums ir 4 stundas, lai rezervētu šo vietu. Spiediet 'Apstiprināt' zem šī paziņojuma."
+                _("🏆 Vieta atbrīvojusies!"),
+                _("Pakalpojumam '{}' ir atbrīvojusies vieta. Jums ir 4 stundas, lai rezervētu šo vietu. Spiediet 'Apstiprināt' zem šī paziņojuma.").format(svc['name'])
             )
             
             cursor.execute("""
@@ -932,19 +925,18 @@ def check_and_notify_waitlist(service_id, provider_id, available_date):
                 VALUES (%s, %s, %s, %s, NOW() + INTERVAL '4 hours')
             """, [waitlist_id, user_id, service_id, token])
 
-
 @csrf_exempt
 def claim_waitlist_spot(request):
     if request.method != 'POST':
-        return JsonResponse({"error": "POST only"}, status=405)
+        return JsonResponse({"error": _("POST only")}, status=405)
     
     auth_header = request.headers.get('Authorization')
     if not auth_header:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     token = auth_header.split(' ')[1]
     user_id = get_user_from_token(token)
     if not user_id:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     
     try:
         data = json.loads(request.body)
@@ -963,9 +955,9 @@ def claim_waitlist_spot(request):
             row = cursor.fetchone()
             
             if not row:
-                return JsonResponse({"error": "Šis piedāvājums ir beidzies vai nav derīgs."}, status=400)
+                return JsonResponse({"error": _("Šis piedāvājums ir beidzies vai nav derīgs.")}, status=400)
             if row[0] != user_id:
-                return JsonResponse({"error": "Unauthorized"}, status=401)
+                return JsonResponse({"error": _("Unauthorized")}, status=401)
             
             svc = get_service(service_id)
             cursor.execute("""
@@ -980,7 +972,6 @@ def claim_waitlist_spot(request):
         return JsonResponse({"status": "booking_created"})
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
-    
 
 def check_admin(token):
     user_id = get_user_from_token(token)
@@ -997,15 +988,14 @@ def check_admin(token):
 def admin_stats(request):
     auth_header = request.headers.get('Authorization')
     if not auth_header:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     token = auth_header.split(' ')[1]
     user_id, is_admin = check_admin(token)
     if not is_admin:
-        return JsonResponse({"error": "Admin access required"}, status=403)
+        return JsonResponse({"error": _("Admin access required")}, status=403)
     
     try:
         with connection.cursor() as cursor:
-            # User counts
             cursor.execute("""
                 SELECT 
                     COUNT(*) as total,
@@ -1022,7 +1012,6 @@ def admin_stats(request):
                 "clients": row[3] or 0,
             }
             
-            # Booking counts
             cursor.execute("""
                 SELECT 
                     COUNT(*) as total,
@@ -1039,11 +1028,9 @@ def admin_stats(request):
             stats["cancelled_bookings"] = row[3] or 0
             stats["total_revenue"] = float(row[4] or 0)
             
-            # Total services
             cursor.execute("SELECT COUNT(*) FROM services")
             stats["total_services"] = cursor.fetchone()[0]
             
-            # Recent bookings (last 10)
             cursor.execute("""
                 SELECT r.id, r.service_name, r.res_date, r.res_time, r.status,
                        u.username as client, p.username as provider, r.booked_price
@@ -1067,7 +1054,6 @@ def admin_stats(request):
                 })
             stats["recent_bookings"] = recent
             
-            # Monthly bookings chart (last 6 months)
             cursor.execute("""
                 SELECT 
                     TO_CHAR(DATE_TRUNC('month', res_date), 'YYYY-MM') as month,
@@ -1087,7 +1073,6 @@ def admin_stats(request):
                 })
             stats["monthly_stats"] = monthly
             
-            # Top services
             cursor.execute("""
                 SELECT r.service_name, COUNT(*) as count, COALESCE(SUM(r.booked_price), 0) as revenue
                 FROM reservations r
@@ -1108,16 +1093,15 @@ def admin_stats(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-
 @csrf_exempt
 def admin_get_users(request):
     auth_header = request.headers.get('Authorization')
     if not auth_header:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     token = auth_header.split(' ')[1]
     _, is_admin = check_admin(token)
     if not is_admin:
-        return JsonResponse({"error": "Admin access required"}, status=403)
+        return JsonResponse({"error": _("Admin access required")}, status=403)
     
     try:
         role_filter = request.GET.get('role', '')
@@ -1154,19 +1138,18 @@ def admin_get_users(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-
 @csrf_exempt
 def admin_update_user(request, user_id):
     if request.method != 'PUT':
-        return JsonResponse({"error": "PUT only"}, status=405)
+        return JsonResponse({"error": _("PUT only")}, status=405)
     
     auth_header = request.headers.get('Authorization')
     if not auth_header:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     token = auth_header.split(' ')[1]
     _, is_admin = check_admin(token)
     if not is_admin:
-        return JsonResponse({"error": "Admin access required"}, status=403)
+        return JsonResponse({"error": _("Admin access required")}, status=403)
     
     try:
         data = json.loads(request.body)
@@ -1188,19 +1171,18 @@ def admin_update_user(request, user_id):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-
 @csrf_exempt
 def admin_delete_user(request, user_id):
     if request.method != 'DELETE':
-        return JsonResponse({"error": "DELETE only"}, status=405)
+        return JsonResponse({"error": _("DELETE only")}, status=405)
     
     auth_header = request.headers.get('Authorization')
     if not auth_header:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     token = auth_header.split(' ')[1]
     _, is_admin = check_admin(token)
     if not is_admin:
-        return JsonResponse({"error": "Admin access required"}, status=403)
+        return JsonResponse({"error": _("Admin access required")}, status=403)
     
     try:
         with connection.cursor() as cursor:
@@ -1209,16 +1191,15 @@ def admin_delete_user(request, user_id):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-
 @csrf_exempt
 def admin_get_services(request):
     auth_header = request.headers.get('Authorization')
     if not auth_header:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     token = auth_header.split(' ')[1]
     _, is_admin = check_admin(token)
     if not is_admin:
-        return JsonResponse({"error": "Admin access required"}, status=403)
+        return JsonResponse({"error": _("Admin access required")}, status=403)
     
     try:
         with connection.cursor() as cursor:
@@ -1250,19 +1231,18 @@ def admin_get_services(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-
 @csrf_exempt
 def admin_delete_service(request, service_id):
     if request.method != 'DELETE':
-        return JsonResponse({"error": "DELETE only"}, status=405)
+        return JsonResponse({"error": _("DELETE only")}, status=405)
     
     auth_header = request.headers.get('Authorization')
     if not auth_header:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     token = auth_header.split(' ')[1]
     _, is_admin = check_admin(token)
     if not is_admin:
-        return JsonResponse({"error": "Admin access required"}, status=403)
+        return JsonResponse({"error": _("Admin access required")}, status=403)
     
     try:
         with connection.cursor() as cursor:
@@ -1271,16 +1251,15 @@ def admin_delete_service(request, service_id):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-
 @csrf_exempt
 def admin_get_bookings(request):
     auth_header = request.headers.get('Authorization')
     if not auth_header:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     token = auth_header.split(' ')[1]
     _, is_admin = check_admin(token)
     if not is_admin:
-        return JsonResponse({"error": "Admin access required"}, status=403)
+        return JsonResponse({"error": _("Admin access required")}, status=403)
     
     try:
         status_filter = request.GET.get('status', '')
@@ -1322,19 +1301,18 @@ def admin_get_bookings(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-
 @csrf_exempt
 def admin_update_booking(request, booking_id):
     if request.method != 'PUT':
-        return JsonResponse({"error": "PUT only"}, status=405)
+        return JsonResponse({"error": _("PUT only")}, status=405)
     
     auth_header = request.headers.get('Authorization')
     if not auth_header:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     token = auth_header.split(' ')[1]
     _, is_admin = check_admin(token)
     if not is_admin:
-        return JsonResponse({"error": "Admin access required"}, status=403)
+        return JsonResponse({"error": _("Admin access required")}, status=403)
     
     try:
         data = json.loads(request.body)
@@ -1352,19 +1330,18 @@ def admin_update_booking(request, booking_id):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-
 @csrf_exempt
 def admin_delete_booking(request, booking_id):
     if request.method != 'DELETE':
-        return JsonResponse({"error": "DELETE only"}, status=405)
+        return JsonResponse({"error": _("DELETE only")}, status=405)
     
     auth_header = request.headers.get('Authorization')
     if not auth_header:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+        return JsonResponse({"error": _("Unauthorized")}, status=401)
     token = auth_header.split(' ')[1]
     _, is_admin = check_admin(token)
     if not is_admin:
-        return JsonResponse({"error": "Admin access required"}, status=403)
+        return JsonResponse({"error": _("Admin access required")}, status=403)
     
     try:
         with connection.cursor() as cursor:

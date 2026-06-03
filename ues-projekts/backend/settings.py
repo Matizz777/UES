@@ -27,7 +27,20 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+USE_I18N = True
+USE_L10N = True
 
+# Available languages
+LANGUAGES = [
+    ('en', 'English'),
+    ('lv', 'Latvian'),
+]
+
+LANGUAGE_COOKIE_NAME = 'django_language'
+
+LOCALE_PATHS = [
+    BASE_DIR / 'locale',
+]
 # Application definition
 
 INSTALLED_APPS = [
@@ -48,6 +61,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
 ]
 
 ROOT_URLCONF = 'backend.urls'

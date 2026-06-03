@@ -5,49 +5,48 @@
       
       <div class="profile-tabs">
         <button :class="{ active: activeTab === 'info' }" @click="activeTab = 'info'">
-          Profila informācija
+          {{ $t('profile_info') }}
         </button>
         <button :class="{ active: activeTab === 'password' }" @click="activeTab = 'password'">
-          Mainīt paroli
+          {{ $t('change_password') }}
         </button>
         <button v-if="user.roles === 2" :class="{ active: activeTab === 'business' }" @click="activeTab = 'business'">
-          Biznesa informācija
+          {{ $t('business_info') }}
         </button>
       </div>
       
       <div class="profile-content">
-        <!-- Basic Info Tab -->
         <div v-if="activeTab === 'info'" class="tab-pane">
           <div class="form-group">
-            <label>Lietotājvārds</label>
+            <label>{{ $t('username') }}</label>
             <input type="text" v-model="profile.username" disabled class="disabled-input" />
           </div>
           
           <div class="form-group">
-            <label>E-pasts</label>
+            <label>{{ $t('email') }}</label>
             <input type="email" v-model="profile.email" />
           </div>
           
           <div class="form-row-2">
             <div class="form-group">
-              <label>Vārds</label>
-              <input type="text" v-model="profile.first_name" placeholder="Vārds" />
+              <label>{{ $t('first_name') }}</label>
+              <input type="text" v-model="profile.first_name" :placeholder="$t('first_name')" />
             </div>
             <div class="form-group">
-              <label>Uzvārds</label>
-              <input type="text" v-model="profile.last_name" placeholder="Uzvārds" />
+              <label>{{ $t('last_name') }}</label>
+              <input type="text" v-model="profile.last_name" :placeholder="$t('last_name')" />
             </div>
           </div>
           
           <div class="form-group">
-            <label>Tālrunis</label>
+            <label>{{ $t('phone') }}</label>
             <input type="tel" v-model="profile.phone" placeholder="+371 ..." />
           </div>
           
           <div v-if="user.roles === 2" class="form-group">
-            <label>Nozare</label>
+            <label>{{ $t('industry_field') }}</label>
             <select v-model="profile.industry">
-              <option value="">Izvēlies nozari</option>
+              <option value="">{{ $t('industry_field') }}</option>
               <option value="Skaistumkopšana">Skaistumkopšana</option>
               <option value="Medicīna">Medicīna</option>
               <option value="IT pakalpojumi">IT pakalpojumi</option>
@@ -57,58 +56,56 @@
           </div>
           
           <div class="form-group">
-            <label>Apraksts</label>
-            <textarea v-model="profile.description" rows="3" placeholder="Pastāsti par sevi..."></textarea>
+            <label>{{ $t('description_label') }}</label>
+            <textarea v-model="profile.description" rows="3" :placeholder="$t('service_description')"></textarea>
           </div>
           
           <button class="btn-primary" @click="saveProfile" :disabled="saving">
-            {{ saving ? 'Saglabā...' : 'Saglabāt izmaiņas' }}
+            {{ saving ? $t('loading') : $t('save') }}
           </button>
         </div>
         
-        <!-- Password Change Tab -->
         <div v-if="activeTab === 'password'" class="tab-pane">
           <div class="form-group">
-            <label>Vecā parole</label>
+            <label>{{ $t('old_password') }}</label>
             <input type="password" v-model="passwordData.old_password" />
           </div>
           
           <div class="form-group">
-            <label>Jaunā parole</label>
+            <label>{{ $t('new_password') }}</label>
             <input type="password" v-model="passwordData.new_password" />
           </div>
           
           <div class="form-group">
-            <label>Atkārtot jauno paroli</label>
+            <label>{{ $t('confirm_password') }}</label>
             <input type="password" v-model="passwordData.confirm_password" />
           </div>
           
           <div v-if="passwordError" class="error-msg">{{ passwordError }}</div>
           
           <button class="btn-primary" @click="changePassword" :disabled="changingPassword">
-            {{ changingPassword ? 'Maina...' : 'Mainīt paroli' }}
+            {{ changingPassword ? $t('loading') : $t('change_password') }}
           </button>
         </div>
         
-        <!-- Business Info Tab (only for providers) -->
         <div v-if="activeTab === 'business' && user.roles === 2" class="tab-pane">
           <div class="form-group">
-            <label>Reģistrācijas numurs</label>
+            <label>{{ $t('registration_number') }}</label>
             <input type="text" v-model="profile.reg_number" placeholder="LV12345678901" />
           </div>
           
           <div class="form-group">
-            <label>Adrese</label>
-            <textarea v-model="profile.address" rows="2" placeholder="Juridiskā adrese"></textarea>
+            <label>{{ $t('address') }}</label>
+            <textarea v-model="profile.address" rows="2" :placeholder="$t('address')"></textarea>
           </div>
           
           <div class="info-note">
             <span>ℹ️</span>
-            <p>Šī informācija tiks rādīta klientiem jūsu profilā.</p>
+            <p>{{ $t('business_info_note') || 'This information will be shown to clients in your profile.' }}</p>
           </div>
           
           <button class="btn-primary" @click="saveProfile" :disabled="saving">
-            {{ saving ? 'Saglabā...' : 'Saglabāt izmaiņas' }}
+            {{ saving ? $t('loading') : $t('save') }}
           </button>
         </div>
       </div>

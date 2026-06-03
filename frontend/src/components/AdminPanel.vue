@@ -1,19 +1,19 @@
 <template>
   <div class="admin-panel">
     <div class="admin-header">
-      <h1>👑 Admin Panelis</h1>
+      <h1>👑 {{ $t('admin_panel') }}</h1>
       <div class="admin-tabs">
         <button :class="{ active: activeTab === 'dashboard' }" @click="activeTab = 'dashboard'">
-          📊 Panelis
+          📊 {{ $t('dashboard') }}
         </button>
         <button :class="{ active: activeTab === 'users' }" @click="activeTab = 'users'">
-          👥 Lietotāji
+          👥 {{ $t('users') }}
         </button>
         <button :class="{ active: activeTab === 'services' }" @click="activeTab = 'services'">
-          🛠️ Pakalpojumi
+          🛠️ {{ $t('services_admin') }}
         </button>
         <button :class="{ active: activeTab === 'bookings' }" @click="activeTab = 'bookings'">
-          📅 Pieraksti
+          📅 {{ $t('bookings_admin') }}
         </button>
       </div>
     </div>
@@ -26,49 +26,49 @@
             <div class="stat-icon">👥</div>
             <div class="stat-info">
               <h3>{{ stats.total_users || 0 }}</h3>
-              <p>Kopā lietotāju</p>
+              <p>{{ $t('total_users') }}</p>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">🏢</div>
             <div class="stat-info">
               <h3>{{ stats.providers || 0 }}</h3>
-              <p>Pakalpojumu sniedzēji</p>
+              <p>{{ $t('providers') }}</p>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">👤</div>
             <div class="stat-info">
               <h3>{{ stats.clients || 0 }}</h3>
-              <p>Klienti</p>
+              <p>{{ $t('clients') }}</p>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">📅</div>
             <div class="stat-info">
               <h3>{{ stats.total_bookings || 0 }}</h3>
-              <p>Kopā pierakstu</p>
+              <p>{{ $t('total_bookings') }}</p>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">⏳</div>
             <div class="stat-info">
               <h3>{{ stats.upcoming_bookings || 0 }}</h3>
-              <p>Gaidāmie</p>
+              <p>{{ $t('upcoming_bookings') }}</p>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">💰</div>
             <div class="stat-info">
               <h3>{{ (stats.total_revenue || 0).toFixed(2) }} €</h3>
-              <p>Kopējais apgrozījums</p>
+              <p>{{ $t('total_revenue') }}</p>
             </div>
           </div>
         </div>
 
         <div class="charts-row">
           <div class="chart-card">
-            <h3>🔥 Populārākie pakalpojumi</h3>
+            <h3>🔥 {{ $t('popular_services') }}</h3>
             <div class="bar-chart">
               <div v-for="service in stats.top_services" :key="service.name" class="bar-item">
                 <span class="bar-label">{{ service.name }}</span>
@@ -80,62 +80,62 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <div class="chart-card">
+          <h3>📊 {{ $t('monthly_stats') }}</h3>
+          <div class="monthly-stats-table">
+            <div class="monthly-header">
+              <span>{{ $t('month') }}</span>
+              <span>{{ $t('bookings') }}</span>
+              <span>{{ $t('revenue') }}</span>
+              <span>{{ $t('trend') }}</span>
+            </div>
+            <div v-for="month in stats.monthly_stats" :key="month.month" class="monthly-row">
+              <span class="month-name">{{ month.month.slice(5) }} / {{ month.month.slice(0,4) }}</span>
+              <span class="month-count">
+                <span class="count-badge">{{ month.count }}</span>
+              </span>
+              <span class="month-revenue">{{ month.revenue }} €</span>
+              <span class="month-trend">
+                <span :class="getTrendClass(month.count, stats.monthly_stats)">
+                  {{ getTrendIcon(month.count, stats.monthly_stats) }}
+                </span>
+              </span>
+            </div>
           </div>
 
-            <div class="chart-card">
-            <h3>📊 Ikmēneša statistika</h3>
-            <div class="monthly-stats-table">
-                <div class="monthly-header">
-                <span>Mēnesis</span>
-                <span>Pieraksti</span>
-                <span>Ieņēmumi</span>
-                <span>Trends</span>
-                </div>
-                <div v-for="month in stats.monthly_stats" :key="month.month" class="monthly-row">
-                <span class="month-name">{{ month.month.slice(5) }} / {{ month.month.slice(0,4) }}</span>
-                <span class="month-count">
-                    <span class="count-badge">{{ month.count }}</span>
-                </span>
-                <span class="month-revenue">{{ month.revenue }} €</span>
-                <span class="month-trend">
-                    <span :class="getTrendClass(month.count, stats.monthly_stats)">
-                    {{ getTrendIcon(month.count, stats.monthly_stats) }}
-                    </span>
-                </span>
-                </div>
+          <div class="quick-stats">
+            <div class="quick-stat">
+              <div class="quick-stat-icon">📈</div>
+              <div class="quick-stat-info">
+                <div class="quick-stat-value">{{ totalBookingsCount }}</div>
+                <div class="quick-stat-label">{{ $t('total_bookings') }}</div>
+              </div>
             </div>
-            
-            <div class="quick-stats">
-                <div class="quick-stat">
-                <div class="quick-stat-icon">📈</div>
-                <div class="quick-stat-info">
-                    <div class="quick-stat-value">{{ totalBookingsCount }}</div>
-                    <div class="quick-stat-label">Kopā pieraksti</div>
-                </div>
-                </div>
-                <div class="quick-stat">
-                <div class="quick-stat-icon">💰</div>
-                <div class="quick-stat-info">
-                    <div class="quick-stat-value">{{ totalRevenueMonthly }} €</div>
-                    <div class="quick-stat-label">Kopējie ieņēmumi</div>
-                </div>
-                </div>
-                <div class="quick-stat">
-                <div class="quick-stat-icon">🏆</div>
-                <div class="quick-stat-info">
-                    <div class="quick-stat-value">{{ bestMonthName }}</div>
-                    <div class="quick-stat-label">Populārākais</div>
-                </div>
-                </div>
+            <div class="quick-stat">
+              <div class="quick-stat-icon">💰</div>
+              <div class="quick-stat-info">
+                <div class="quick-stat-value">{{ totalRevenueMonthly }} €</div>
+                <div class="quick-stat-label">{{ $t('total_revenue') }}</div>
+              </div>
             </div>
+            <div class="quick-stat">
+              <div class="quick-stat-icon">🏆</div>
+              <div class="quick-stat-info">
+                <div class="quick-stat-value">{{ bestMonthName }}</div>
+                <div class="quick-stat-label">{{ $t('most_popular') }}</div>
+              </div>
             </div>
+          </div>
+        </div>
 
         <div class="recent-card">
-          <h3>🕐 Pēdējie pieraksti</h3>
+          <h3>🕐 {{ $t('recent_bookings') }}</h3>
           <div class="table-wrapper">
             <table class="data-table">
               <thead>
-                <tr><th>ID</th><th>Pakalpojums</th><th>Klients</th><th>Sniedzējs</th><th>Datums</th><th>Laiks</th><th>Statuss</th><th>Cena</th></tr>
+                <tr><th>ID</th><th>{{ $t('service') }}</th><th>{{ $t('client') }}</th><th>{{ $t('provider') }}</th><th>{{ $t('date') }}</th><th>{{ $t('time') }}</th><th>{{ $t('status') }}</th><th>{{ $t('price') }}</th></tr>
               </thead>
               <tbody>
                 <tr v-for="b in stats.recent_bookings" :key="b.id">
@@ -145,7 +145,7 @@
                   <td>{{ b.provider }}</td>
                   <td>{{ b.date }}</td>
                   <td>{{ b.time }}</td>
-                  <td><span :class="'status-' + b.status">{{ b.status === 'upcoming' ? 'Gaidāms' : b.status === 'completed' ? 'Pabeigts' : 'Atcelts' }}</span></td>
+                  <td><span :class="'status-' + b.status">{{ b.status === 'upcoming' ? $t('upcoming') : b.status === 'completed' ? $t('completed') : $t('cancelled') }}</span></td>
                   <td>{{ b.price }} €</td>
                 </tr>
               </tbody>
@@ -157,21 +157,21 @@
       <!-- Users Tab -->
       <div v-if="activeTab === 'users'" class="users-tab">
         <div class="table-header">
-          <h3>👥 Lietotāji</h3>
+          <h3>👥 {{ $t('users') }}</h3>
           <div class="filters">
             <select v-model="userRoleFilter" @change="loadUsers">
-              <option value="all">Visas lomas</option>
-              <option value="1">Admins</option>
-              <option value="2">Sniedzēji</option>
-              <option value="3">Klienti</option>
+              <option value="all">{{ $t('all_roles') }}</option>
+              <option value="1">{{ $t('admins') }}</option>
+              <option value="2">{{ $t('providers') }}</option>
+              <option value="3">{{ $t('clients') }}</option>
             </select>
-            <button class="btn-add" @click="openUserModal()">+ Pievienot</button>
+            <button class="btn-add" @click="openUserModal()">+ {{ $t('add_user') }}</button>
           </div>
         </div>
         <div class="table-wrapper">
           <table class="data-table">
             <thead>
-              <tr><th>ID</th><th>Lietotājvārds</th><th>E-pasts</th><th>Loma</th><th>Tālrunis</th><th>Statuss</th><th>Darbības</th></tr>
+              <tr><th>ID</th><th>{{ $t('username') }}</th><th>{{ $t('email') }}</th><th>{{ $t('role') }}</th><th>{{ $t('phone') }}</th><th>{{ $t('status') }}</th><th>{{ $t('actions') }}</th></tr>
             </thead>
             <tbody>
               <tr v-for="u in paginatedUsers" :key="u.id">
@@ -180,10 +180,10 @@
                 <td>{{ u.email }}</td>
                 <td>{{ getRoleName(u.roles) }}</td>
                 <td>{{ u.phone || '-' }}</td>
-                <td><span :class="u.is_active ? 'status-active' : 'status-inactive'">{{ u.is_active ? 'Aktīvs' : 'Bloķēts' }}</span></td>
+                <td><span :class="u.is_active ? 'status-active' : 'status-inactive'">{{ u.is_active ? $t('active') : $t('inactive') }}</span></td>
                 <td class="actions">
-                  <button class="btn-icon edit" @click="openUserModal(u)">✏️</button>
-                  <button class="btn-icon delete" @click="deleteUser(u.id)">🗑️</button>
+                  <button class="btn-icon edit" @click="openUserModal(u)" :title="$t('edit')">✏️</button>
+                  <button class="btn-icon delete" @click="deleteUser(u.id)" :title="$t('delete')">🗑️</button>
                 </td>
               </tr>
             </tbody>
@@ -195,19 +195,19 @@
             <button v-for="page in totalUsersPages" :key="page" @click="usersPage = page" :class="{ active: usersPage === page }">{{ page }}</button>
           </div>
           <button @click="usersPage++" :disabled="usersPage === totalUsersPages">→</button>
-          <span class="page-info">{{ users.length }} kopā</span>
+          <span class="page-info">{{ users.length }} {{ $t('total') }}</span>
         </div>
       </div>
 
       <!-- Services Tab -->
       <div v-if="activeTab === 'services'" class="services-tab">
         <div class="table-header">
-          <h3>🛠️ Pakalpojumi</h3>
+          <h3>🛠️ {{ $t('services_admin') }}</h3>
         </div>
         <div class="table-wrapper">
           <table class="data-table">
             <thead>
-              <tr><th>ID</th><th>Nosaukums</th><th>Cena</th><th>Sniedzējs</th><th>Ilgums</th><th>Darba laiks</th><th>Darbības</th></tr>
+              <tr><th>ID</th><th>{{ $t('service_name') }}</th><th>{{ $t('price') }}</th><th>{{ $t('provider') }}</th><th>{{ $t('duration') }}</th><th>{{ $t('working_hours') }}</th><th>{{ $t('actions') }}</th></tr>
             </thead>
             <tbody>
               <tr v-for="s in paginatedServices" :key="s.id">
@@ -218,7 +218,7 @@
                 <td>{{ s.duration_minutes }} min</td>
                 <td>{{ s.work_start }} - {{ s.work_end }}</td>
                 <td class="actions">
-                  <button class="btn-icon delete" @click="deleteService(s.id)">🗑️</button>
+                  <button class="btn-icon delete" @click="deleteService(s.id)" :title="$t('delete')">🗑️</button>
                 </td>
               </tr>
             </tbody>
@@ -230,25 +230,25 @@
             <button v-for="page in totalServicesPages" :key="page" @click="servicesPage = page" :class="{ active: servicesPage === page }">{{ page }}</button>
           </div>
           <button @click="servicesPage++" :disabled="servicesPage === totalServicesPages">→</button>
-          <span class="page-info">{{ services.length }} kopā</span>
+          <span class="page-info">{{ services.length }} {{ $t('total') }}</span>
         </div>
       </div>
 
       <!-- Bookings Tab -->
       <div v-if="activeTab === 'bookings'" class="bookings-tab">
         <div class="table-header">
-          <h3>📅 Visi pieraksti</h3>
+          <h3>📅 {{ $t('all_bookings') }}</h3>
           <select v-model="bookingStatusFilter" @change="loadBookings">
-            <option value="all">Visi</option>
-            <option value="upcoming">Gaidāmie</option>
-            <option value="completed">Pabeigtie</option>
-            <option value="cancelled">Atceltie</option>
+            <option value="all">{{ $t('all') }}</option>
+            <option value="upcoming">{{ $t('upcoming') }}</option>
+            <option value="completed">{{ $t('completed') }}</option>
+            <option value="cancelled">{{ $t('cancelled') }}</option>
           </select>
         </div>
         <div class="table-wrapper">
           <table class="data-table">
             <thead>
-              <tr><th>ID</th><th>Pakalpojums</th><th>Klients</th><th>Sniedzējs</th><th>Datums</th><th>Laiks</th><th>Statuss</th><th>Cena</th><th>Darbības</th></tr>
+              <tr><th>ID</th><th>{{ $t('service') }}</th><th>{{ $t('client') }}</th><th>{{ $t('provider') }}</th><th>{{ $t('date') }}</th><th>{{ $t('time') }}</th><th>{{ $t('status') }}</th><th>{{ $t('price') }}</th><th>{{ $t('actions') }}</th></tr>
             </thead>
             <tbody>
               <tr v-for="b in paginatedBookings" :key="b.id">
@@ -258,11 +258,11 @@
                 <td>{{ b.provider }}</td>
                 <td>{{ b.date }}</td>
                 <td>{{ b.time }}</td>
-                <td><span :class="'status-' + b.status">{{ b.status === 'upcoming' ? 'Gaidāms' : b.status === 'completed' ? 'Pabeigts' : 'Atcelts' }}</span></td>
+                <td><span :class="'status-' + b.status">{{ b.status === 'upcoming' ? $t('upcoming') : b.status === 'completed' ? $t('completed') : $t('cancelled') }}</span></td>
                 <td>{{ b.price }} €</td>
                 <td class="actions">
-                  <button class="btn-icon edit" @click="openBookingModal(b)">✏️</button>
-                  <button class="btn-icon delete" @click="deleteBooking(b.id)">🗑️</button>
+                  <button class="btn-icon edit" @click="openBookingModal(b)" :title="$t('edit')">✏️</button>
+                  <button class="btn-icon delete" @click="deleteBooking(b.id)" :title="$t('delete')">🗑️</button>
                 </td>
               </tr>
             </tbody>
@@ -274,7 +274,7 @@
             <button v-for="page in totalBookingsPages" :key="page" @click="bookingsPage = page" :class="{ active: bookingsPage === page }">{{ page }}</button>
           </div>
           <button @click="bookingsPage++" :disabled="bookingsPage === totalBookingsPages">→</button>
-          <span class="page-info">{{ bookings.length }} kopā</span>
+          <span class="page-info">{{ bookings.length }} {{ $t('total') }}</span>
         </div>
       </div>
     </div>
@@ -282,20 +282,20 @@
     <!-- User Modal -->
     <div v-if="showUserModal" class="modal-overlay" @click.self="showUserModal = false">
       <div class="modal-card">
-        <h3>{{ editingUser ? 'Labot lietotāju' : 'Pievienot lietotāju' }}</h3>
-        <input v-model="userForm.username" placeholder="Lietotājvārds" />
-        <input v-model="userForm.email" placeholder="E-pasts" />
-        <input v-model="userForm.password" v-if="!editingUser" placeholder="Parole" type="password" />
+        <h3>{{ editingUser ? $t('edit_user') : $t('add_user') }}</h3>
+        <input v-model="userForm.username" :placeholder="$t('username')" />
+        <input v-model="userForm.email" :placeholder="$t('email')" />
+        <input v-model="userForm.password" v-if="!editingUser" :placeholder="$t('password')" type="password" />
         <select v-model="userForm.roles">
-          <option value="1">Admin</option>
-          <option value="2">Pakalpojumu sniedzējs</option>
-          <option value="3">Klients</option>
+          <option value="1">{{ $t('admin') }}</option>
+          <option value="2">{{ $t('provider') }}</option>
+          <option value="3">{{ $t('client') }}</option>
         </select>
-        <input v-model="userForm.phone" placeholder="Tālrunis" />
-        <textarea v-model="userForm.description" placeholder="Apraksts" rows="2"></textarea>
+        <input v-model="userForm.phone" :placeholder="$t('phone')" />
+        <textarea v-model="userForm.description" :placeholder="$t('description_label')" rows="2"></textarea>
         <div class="modal-footer">
-          <button class="btn-cancel" @click="showUserModal = false">Atcelt</button>
-          <button class="btn-save" @click="saveUser">Saglabāt</button>
+          <button class="btn-cancel" @click="showUserModal = false">{{ $t('cancel') }}</button>
+          <button class="btn-save" @click="saveUser">{{ $t('save') }}</button>
         </div>
       </div>
     </div>
@@ -303,19 +303,19 @@
     <!-- Booking Modal -->
     <div v-if="showBookingModal" class="modal-overlay" @click.self="showBookingModal = false">
       <div class="modal-card">
-        <h3>Labot pierakstu</h3>
-        <input v-model="bookingForm.service" placeholder="Pakalpojums" />
+        <h3>{{ $t('edit_booking') }}</h3>
+        <input v-model="bookingForm.service" :placeholder="$t('service')" />
         <input type="date" v-model="bookingForm.date" />
         <input type="time" v-model="bookingForm.time" />
-        <input type="number" v-model="bookingForm.price" placeholder="Cena" step="0.01" />
+        <input type="number" v-model="bookingForm.price" :placeholder="$t('price')" step="0.01" />
         <select v-model="bookingForm.status">
-          <option value="upcoming">Gaidāms</option>
-          <option value="completed">Pabeigts</option>
-          <option value="cancelled">Atcelts</option>
+          <option value="upcoming">{{ $t('upcoming') }}</option>
+          <option value="completed">{{ $t('completed') }}</option>
+          <option value="cancelled">{{ $t('cancelled') }}</option>
         </select>
         <div class="modal-footer">
-          <button class="btn-cancel" @click="showBookingModal = false">Atcelt</button>
-          <button class="btn-save" @click="saveBooking">Saglabāt</button>
+          <button class="btn-cancel" @click="showBookingModal = false">{{ $t('cancel') }}</button>
+          <button class="btn-save" @click="saveBooking">{{ $t('save') }}</button>
         </div>
       </div>
     </div>
@@ -324,7 +324,10 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import axios from 'axios';
+
+const { t } = useI18n();
 
 const activeTab = ref('dashboard');
 const stats = ref({});
@@ -374,9 +377,9 @@ const userForm = ref({ username: '', email: '', password: '', roles: '3', phone:
 const bookingForm = ref({ service: '', date: '', time: '', price: '', status: 'upcoming' });
 
 const getRoleName = (role) => {
-  if (role === 1) return 'Admin';
-  if (role === 2) return 'Sniedzējs';
-  return 'Klients';
+  if (role === 1) return t('admin');
+  if (role === 2) return t('provider');
+  return t('client');
 };
 
 const loadStats = async () => {
@@ -449,29 +452,29 @@ const saveUser = async () => {
     await loadUsers();
     await loadStats();
   } catch (e) {
-    alert('Kļūda saglabājot lietotāju');
+    alert(t('error_saving_user'));
   }
 };
 
 const deleteUser = async (id) => {
-  if (!confirm('Vai tiešām dzēst šo lietotāju?')) return;
+  if (!confirm(t('confirm_delete_user'))) return;
   try {
     await axios.delete(`http://127.0.0.1:8080/api/admin/users/delete/${id}/`);
     await loadUsers();
     await loadStats();
   } catch (e) {
-    alert('Kļūda dzēšot lietotāju');
+    alert(t('error_deleting_user'));
   }
 };
 
 const deleteService = async (id) => {
-  if (!confirm('Vai tiešām dzēst šo pakalpojumu?')) return;
+  if (!confirm(t('confirm_delete_service'))) return;
   try {
     await axios.delete(`http://127.0.0.1:8080/api/admin/services/delete/${id}/`);
     await loadServices();
     await loadStats();
   } catch (e) {
-    alert('Kļūda dzēšot pakalpojumu');
+    alert(t('error_deleting_service'));
   }
 };
 
@@ -488,18 +491,18 @@ const saveBooking = async () => {
     await loadBookings();
     await loadStats();
   } catch (e) {
-    alert('Kļūda saglabājot pierakstu');
+    alert(t('error_saving_booking'));
   }
 };
 
 const deleteBooking = async (id) => {
-  if (!confirm('Vai tiešām dzēst šo pierakstu?')) return;
+  if (!confirm(t('confirm_delete_booking'))) return;
   try {
     await axios.delete(`http://127.0.0.1:8080/api/admin/bookings/delete/${id}/`);
     await loadBookings();
     await loadStats();
   } catch (e) {
-    alert('Kļūda dzēšot pierakstu');
+    alert(t('error_deleting_booking'));
   }
 };
 
@@ -538,6 +541,12 @@ const getTrendClass = (count, months) => {
   if (count < prevCount) return 'trend-down';
   return 'trend-same';
 };
+
+// Add missing computed properties
+const totalBookingsCount = computed(() => {
+  if (!stats.value.monthly_stats) return 0;
+  return stats.value.monthly_stats.reduce((sum, m) => sum + (m.count || 0), 0);
+});
 </script>
 
 <style scoped>

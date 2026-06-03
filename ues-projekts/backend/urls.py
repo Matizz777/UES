@@ -37,4 +37,7 @@ urlpatterns = [
     path('api/admin/bookings/', views.admin_get_bookings, name='admin-bookings'),
     path('api/admin/bookings/<int:booking_id>/', views.admin_update_booking, name='admin-update-booking'),
     path('api/admin/bookings/delete/<int:booking_id>/', views.admin_delete_booking, name='admin-delete-booking'),
+    path('set-language/<str:language_code>/', views.set_language, name='set_language'),
+    path('api/set-language/', views.api_set_language, name='api_set_language'),
+    
 ]

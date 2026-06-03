@@ -1,0 +1,157 @@
+export default {
+  // Navbar
+  profile: "Profile",
+  logout: "Logout",
+  admin: "Admin",
+  provider: "Service Provider",
+  client: "Client",
+  
+  // Common
+  save: "Save",
+  cancel: "Cancel",
+  back: "Back",
+  confirm: "Confirm",
+  delete: "Delete",
+  edit: "Edit",
+  add: "Add",
+  search: "Search...",
+  loading: "Loading...",
+  no_data: "No data found",
+  
+  // Login/Register
+  login: "Login",
+  register: "Register",
+  username: "Username",
+  password: "Password",
+  email: "Email",
+  confirm_password: "Confirm Password",
+  forgot_password: "Forgot password?",
+  no_account: "Don't have an account?",
+  has_account: "Already have an account?",
+  register_now: "Register now",
+  login_now: "Login now",
+  
+  // Dashboard
+  provider_panel: "Provider Dashboard",
+  find_provider: "Find Provider",
+  my_calendar: "My Calendar",
+  my_bookings: "My Bookings",
+  welcome: "Welcome",
+  manage_services: "Manage your services and availability",
+  
+  // Services
+  add_service: "Add Service",
+  service_name: "Service Name",
+  service_price: "Price",
+  service_description: "Description (optional)",
+  duration_minutes: "Duration (minutes)",
+  working_hours: "Working Hours",
+  working_days: "Working Days",
+  my_services: "My Services",
+  no_services: "No services added yet",
+  edit_service: "Edit Service",
+  delete_service: "Delete Service",
+  confirm_delete_service: "Are you sure you want to delete this service?",
+  
+  // Booking
+  booking: "Booking",
+  select_service: "Select Service",
+  select_date: "Select Date",
+  select_time: "Select Time",
+  available_times: "Available Times",
+  no_times_available: "No available times for this day",
+  confirm_booking: "Confirm Booking",
+  booking_confirmed: "Booking Confirmed!",
+  booking_details: "Booking Details",
+  specialist: "Specialist",
+  industry: "Industry",
+  duration: "Duration",
+  price: "Price",
+  address: "Address",
+  phone: "Phone",
+  description_label: "Description",
+  price_fixed_note: "Price is fixed at the time of booking",
+  add_to_waitlist: "Add to Waitlist",
+  added_to_waitlist: "Added to Waitlist",
+  
+  // Reservation list
+  upcoming: "Upcoming",
+  completed: "Completed",
+  cancelled: "Cancelled",
+  reschedule: "Reschedule",
+  cancel_booking: "Cancel Booking",
+  confirm_cancel: "Are you sure you want to cancel this booking?",
+  cannot_reschedule: "Cannot reschedule - less than 24 hours before booking",
+  
+  // Provider Calendar
+  provider_calendar: "Provider Calendar",
+  no_bookings_this_day: "No bookings this day",
+  client: "Client",
+  
+  // Admin Panel
+  admin_panel: "Admin Panel",
+  dashboard: "Dashboard",
+  users: "Users",
+  services_admin: "Services",
+  bookings_admin: "Bookings",
+  total_users: "Total Users",
+  total_services: "Total Services",
+  total_bookings: "Total Bookings",
+  total_revenue: "Total Revenue",
+  upcoming_bookings: "Upcoming",
+  popular_services: "Popular Services",
+  monthly_stats: "Monthly Statistics",
+  recent_bookings: "Recent Bookings",
+  all_bookings: "All Bookings",
+  
+  // Profile
+  profile_info: "Profile Information",
+  change_password: "Change Password",
+  business_info: "Business Information",
+  first_name: "First Name",
+  last_name: "Last Name",
+  old_password: "Old Password",
+  new_password: "New Password",
+  registration_number: "Registration Number",
+  industry_field: "Industry",
+  profile_updated: "Profile updated successfully!",
+  password_changed: "Password changed successfully!",
+  
+  // Notifications
+  notifications: "Notifications",
+  mark_all_read: "Mark all as read",
+  no_notifications: "No new notifications",
+  spot_available: "Spot available!",
+  spot_available_message: "A spot has become available for",
+  you_have_hours: "You have 4 hours to claim it",
+  
+  // Errors
+  error_fill_fields: "Please fill in all fields",
+  error_invalid_credentials: "Invalid username or password",
+  error_server: "Server error. Please try again",
+  error_booking_failed: "Booking failed",
+  error_loading: "Error loading data",
+  
+  // Days
+  monday: "Mon",
+  tuesday: "Tue",
+  wednesday: "Wed",
+  thursday: "Thu",
+  friday: "Fri",
+  saturday: "Sat",
+  sunday: "Sun",
+  
+  // Months
+  january: "Jan",
+  february: "Feb",
+  march: "Mar",
+  april: "Apr",
+  may: "May",
+  june: "Jun",
+  july: "Jul",
+  august: "Aug",
+  september: "Sep",
+  october: "Oct",
+  november: "Nov",
+  december: "Dec"
+}

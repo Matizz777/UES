@@ -1,22 +1,22 @@
 <template>
   <div class="form-container">
     <div class="register-card">
-      <h2>Izveidot kontu</h2>
+      <h2>{{ $t('register') }}</h2>
 
       <div v-if="errorMsg" class="error-banner">{{ errorMsg }}</div>
 
-      <input type="text"     v-model="regData.username" placeholder="Lietotājvārds" />
-      <input type="email"    v-model="regData.email"    placeholder="E-pasts" />
-      <input type="password" v-model="regData.password" placeholder="Parole" />
+      <input type="text"     v-model="regData.username" :placeholder="$t('username')" />
+      <input type="email"    v-model="regData.email"    :placeholder="$t('email')" />
+      <input type="password" v-model="regData.password" :placeholder="$t('password')" />
 
       <select v-model="regData.roles" class="role-select">
-        <option value="3">Esmu klients</option>
-        <option value="2">Esmu pakalpojuma sniedzējs</option>
+        <option value="3">{{ $t('client') }}</option>
+        <option value="2">{{ $t('provider') }}</option>
       </select>
 
       <div v-if="regData.roles == '2'" class="provider-extra-fields">
         <select v-model="regData.industry" class="role-select">
-          <option value="">Izvēlies nozari</option>
+          <option value="">{{ $t('industry_field') }}</option>
           <option value="Skaistumkopšana">Skaistumkopšana</option>
           <option value="Medicīna">Medicīna</option>
           <option value="IT pakalpojumi">IT pakalpojumi</option>
@@ -25,40 +25,40 @@
         
         <textarea
           v-model="regData.description"
-          placeholder="Pastāsti par saviem pakalpojumiem..."
+          :placeholder="$t('service_description')"
           class="desc-textarea"
         ></textarea>
 
         <input
           type="text"
           v-model="regData.reg_number"
-          placeholder="Reģistrācijas numurs (ja ir)"
+          :placeholder="$t('registration_number')"
           class="modern-input"
         />
         
         <input
           type="text"
           v-model="regData.address"
-          placeholder="Adrese (juridiskā / biroja adrese)"
+          :placeholder="$t('address')"
           class="modern-input"
         />
         
         <input
           type="tel"
           v-model="regData.phone"
-          placeholder="Tālruņa numurs"
+          :placeholder="$t('phone')"
           class="modern-input"
         />
       </div>
 
       <button class="btn-register" @click="submit" :disabled="loading">
-        {{ loading ? 'Lādē...' : 'Sākt darbu' }}
+        {{ loading ? $t('loading') : $t('register') }}
       </button>
 
       <p class="back-link" @click="$emit('go-login')">
-        Jau ir konts? <span class="link-accent">Pieslēgties</span>
+        {{ $t('has_account') }} <span class="link-accent">{{ $t('login_now') }}</span>
       </p>
-      <p class="back-link" @click="$emit('back')">← Atpakaļ uz sākumu</p>
+      <p class="back-link" @click="$emit('back')">← {{ $t('back') }}</p>
     </div>
   </div>
 </template>

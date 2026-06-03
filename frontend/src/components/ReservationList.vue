@@ -1,13 +1,13 @@
 <template>
   <div class="reservations-view fade-in">
     <div class="section-header">
-      <h2>{{ user.roles === 2 ? 'Klientu pieteikumi' : 'Mani plānotie pieraksti' }}</h2>
+      <h2>{{ user.roles === 2 ? $t('client_bookings') : $t('my_reservations') }}</h2>
     </div>
 
-    <div v-if="loading" class="empty-state"><p>Ielādē...</p></div>
+    <div v-if="loading" class="empty-state"><p>{{ $t('loading') }}</p></div>
 
     <div v-else-if="reservations.length === 0" class="empty-state">
-      <p>Šeit vēl nekas neparādās.</p>
+      <p>{{ $t('no_reservations') }}</p>
     </div>
 
     <div class="res-list-container" v-else>
@@ -20,13 +20,13 @@
           <div class="res-details">
             <h4>{{ res.service }}</h4>
             <div class="res-meta">
-              <span>🕙 {{ res.time && res.time !== 'Nav laika' ? res.time.slice(0, 5) : 'Laiks nav norādīts' }}</span>
-              <span v-if="user.roles === 2">👤 Klients: <strong>{{ res.client_name }}</strong></span>
-              <span v-else>👤 Speciālists: <strong>{{ res.provider_name || 'Nav norādīts' }}</strong></span>
-              <span class="res-price">💶 {{ res.booked_price ? res.booked_price + ' €' : 'Cena nav fiksēta' }}</span>
+              <span>🕙 {{ res.time && res.time !== 'Nav laika' ? res.time.slice(0, 5) : $t('time_not_specified') }}</span>
+              <span v-if="user.roles === 2">👤 {{ $t('client') }}: <strong>{{ res.client_name }}</strong></span>
+              <span v-else>👤 {{ $t('specialist') }}: <strong>{{ res.provider_name || $t('not_specified') }}</strong></span>
+              <span class="res-price">💶 {{ res.booked_price ? res.booked_price + ' €' : $t('price_not_fixed') }}</span>
             </div>
             <div v-if="!canReschedule(res) && user.roles === 3" class="warning-note">
-              ⚠️ Nevar pārcelt - mazāk par 24h līdz pierakstam
+              ⚠️ {{ $t('cannot_reschedule') }}
             </div>
           </div>
         </div>
@@ -36,13 +36,13 @@
             class="btn-reschedule" 
             @click="openReschedule(res)"
           >
-            📅 Pārcelt
+            📅 {{ $t('reschedule') }}
           </button>
           <button 
             class="btn-cancel-text" 
             @click="cancel(res.id)"
           >
-            Atcelt
+            {{ $t('cancel') }}
           </button>
         </div>
       </div>
@@ -50,23 +50,23 @@
 
     <div v-if="rescheduleTarget" class="modal-overlay" @click.self="rescheduleTarget = null">
       <div class="modal-card">
-        <h3>Pārcelt pierakstu</h3>
+        <h3>{{ $t('reschedule') }}</h3>
         <p><strong>{{ rescheduleTarget.service }}</strong></p>
-        <p class="old-time">Esošais laiks: {{ rescheduleTarget.date }} {{ rescheduleTarget.time }}</p>
+        <p class="old-time">{{ $t('current_time') }}: {{ rescheduleTarget.date }} {{ rescheduleTarget.time }}</p>
 
-        <label class="modal-label">Jauns datums</label>
+        <label class="modal-label">{{ $t('select_date') }}</label>
         <input type="date" v-model="newDate" :min="minDate" />
 
-        <label class="modal-label">Jauns laiks</label>
+        <label class="modal-label">{{ $t('select_time') }}</label>
         <select v-model="newTime" :disabled="loadingTimes">
-          <option value="">Vispirms izvēlieties datumu</option>
+          <option value="">{{ $t('select_date_first') }}</option>
           <option v-for="t in availableTimes" :key="t" :value="t">{{ t }}</option>
         </select>
 
         <div class="modal-footer">
-          <button class="btn-secondary" @click="rescheduleTarget = null">Aizvērt</button>
+          <button class="btn-secondary" @click="rescheduleTarget = null">{{ $t('close') }}</button>
           <button class="btn-primary" @click="confirmReschedule" :disabled="!newDate || !newTime">
-            Apstiprināt
+            {{ $t('confirm') }}
           </button>
         </div>
       </div>

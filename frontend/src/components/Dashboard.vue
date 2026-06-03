@@ -6,7 +6,7 @@
           :class="{ active: activeTab === 'main' }"
           @click="activeTab = 'main'"
         >
-          {{ user.roles === 2 ? '🏢 Speciālista panelis' : '🔍 Atrast speciālistu' }}
+          {{ user.roles === 2 ? '🏢 ' + $t('provider_panel') : '🔍 ' + $t('find_provider') }}
         </button>
 
         <button
@@ -14,7 +14,7 @@
           :class="{ active: activeTab === 'calendar' }"
           @click="activeTab = 'calendar'"
         >
-          🗓️ Mans kalendārs
+          🗓️ {{ $t('my_calendar') }}
         </button>
 
         <button
@@ -22,7 +22,7 @@
           :class="{ active: activeTab === 'my-bookings' }"
           @click="activeTab = 'my-bookings'"
         >
-          📋 Mani pieraksti
+          📋 {{ $t('my_bookings') }}
         </button>
       </div>
     </header>

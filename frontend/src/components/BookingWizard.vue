@@ -1,14 +1,14 @@
 <template>
   <div class="booking-wizard-modern shadow">
     <div class="wizard-top">
-      <button class="btn-back" @click="$emit('cancel')">← Atpakaļ</button>
-      <p>Rezervācija pie <strong>{{ provider?.username }}</strong></p>
+      <button class="btn-back" @click="$emit('cancel')">← {{ $t('back') }}</button>
+      <p>{{ $t('booking') }} {{ $t('with') }} <strong>{{ provider?.username }}</strong></p>
     </div>
 
     <nav class="wizard-steps">
-      <div :class="['step-node', { active: step === 1, done: step > 1 }]">Pakalpojums</div>
-      <div :class="['step-node', { active: step === 2, done: step > 2 }]">Datums</div>
-      <div :class="['step-node', { active: step === 3, done: step > 3 }]">Laiks</div>
+      <div :class="['step-node', { active: step === 1, done: step > 1 }]">{{ $t('select_service') }}</div>
+      <div :class="['step-node', { active: step === 2, done: step > 2 }]">{{ $t('select_date') }}</div>
+      <div :class="['step-node', { active: step === 3, done: step > 3 }]">{{ $t('select_time') }}</div>
     </nav>
 
     <div class="wizard-body">
@@ -22,58 +22,58 @@
           </div>
           <div class="service-detail-body">
             <div class="detail-row">
-              <span class="detail-label">🏢 Speciālists</span>
+              <span class="detail-label">🏢 {{ $t('specialist') }}</span>
               <span class="detail-value">{{ provider.username }}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">🏷️ Nozare</span>
-              <span class="detail-value">{{ provider.industry || 'Nav norādīta' }}</span>
+              <span class="detail-label">🏷️ {{ $t('industry') }}</span>
+              <span class="detail-value">{{ provider.industry || $t('not_specified') }}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">⏱ Ilgums</span>
-              <span class="detail-value">{{ service.duration_minutes || 60 }} minūtes</span>
+              <span class="detail-label">⏱ {{ $t('duration') }}</span>
+              <span class="detail-value">{{ service.duration_minutes || 60 }} {{ $t('minutes') }}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">🕐 Darba laiks</span>
+              <span class="detail-label">🕐 {{ $t('working_hours') }}</span>
               <span class="detail-value">{{ service.work_start || '09:00' }} — {{ service.work_end || '17:00' }}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">📅 Darba dienas</span>
+              <span class="detail-label">📅 {{ $t('working_days') }}</span>
               <span class="detail-value">{{ formatWorkDays(service.work_days) }}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">💶 Cena</span>
+              <span class="detail-label">💶 {{ $t('price') }}</span>
               <span class="detail-value price-highlight">{{ service.price }} €</span>
             </div>
             <div v-if="service.description" class="detail-row column">
-              <span class="detail-label">📋 Apraksts</span>
+              <span class="detail-label">📋 {{ $t('description_label') }}</span>
               <span class="detail-value desc-text">{{ service.description }}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">📍 Adrese</span>
-              <span class="detail-value">{{ provider.address || 'Nav norādīta' }}</span>
+              <span class="detail-label">📍 {{ $t('address') }}</span>
+              <span class="detail-value">{{ provider.address || $t('not_specified') }}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">📞 Tālrunis</span>
-              <span class="detail-value">{{ provider.phone || 'Nav norādīts' }}</span>
+              <span class="detail-label">📞 {{ $t('phone') }}</span>
+              <span class="detail-value">{{ provider.phone || $t('not_specified') }}</span>
             </div>
           </div>
           <div class="confirm-notice">
-            ℹ️ Cena tiek fiksēta rezervācijas brīdī. Turpmākas cenas izmaiņas jūs neskar.
+            ℹ️ {{ $t('price_fixed_note') }}
           </div>
         </div>
         <div class="wizard-footer">
-          <button class="btn-text" @click="$emit('cancel')">Atcelt</button>
-          <button class="btn-primary" @click="goToCalendar">Turpināt →</button>
+          <button class="btn-text" @click="$emit('cancel')">{{ $t('cancel') }}</button>
+          <button class="btn-primary" @click="goToCalendar">{{ $t('continue') }} →</button>
         </div>
       </div>
 
       <!-- Step 2: Date picker -->
       <div v-if="step === 2" class="calendar-step">
-        <h3>Izvēlieties datumu</h3>
+        <h3>{{ $t('select_date') }}</h3>
 
         <div v-if="loadingDates" style="text-align:center;padding:2rem;color:#888;">
-          Ielādē pieejamos datumus...
+          {{ $t('loading') }}
         </div>
 
         <div class="calendar-wrapper" v-else>
@@ -83,8 +83,8 @@
             <button @click="changeMonth(1)">›</button>
           </div>
           <div class="calendar-legend">
-            <span class="legend-item"><span class="legend-dot green"></span> Pieejams</span>
-            <span class="legend-item"><span class="legend-dot grey"></span> Nav brīvu / nestrādā</span>
+            <span class="legend-item"><span class="legend-dot green"></span> {{ $t('available') }}</span>
+            <span class="legend-item"><span class="legend-dot grey"></span> {{ $t('not_available') }}</span>
           </div>
           <div class="calendar-grid">
             <div v-for="day in ['Pr','Ot','Tr','Ce','Pk','Se','Sv']" :key="day" class="day-name">{{ day }}</div>
@@ -100,21 +100,21 @@
         </div>
 
         <div class="wizard-footer">
-          <button class="btn-secondary" @click="step = 1">Atpakaļ</button>
-          <button class="btn-primary" @click="loadTimes" :disabled="!selectedDate">Tālāk</button>
+          <button class="btn-secondary" @click="step = 1">{{ $t('back') }}</button>
+          <button class="btn-primary" @click="loadTimes" :disabled="!selectedDate">{{ $t('continue') }}</button>
         </div>
       </div>
 
       <!-- Step 3: Time slots -->
       <div v-if="step === 3" class="time-selection-step">
-        <h3>Pieejamie laiki: {{ selectedDate }}</h3>
+        <h3>{{ $t('available_times') }}: {{ selectedDate }}</h3>
 
         <div class="booking-summary">
-          <div class="summary-row"><span>Pakalpojums:</span><strong>{{ service.name }}</strong></div>
-          <div class="summary-row"><span>Speciālists:</span><strong>{{ provider.username }}</strong></div>
-          <div class="summary-row"><span>Ilgums:</span><strong>{{ service.duration_minutes || 60 }} min</strong></div>
-          <div class="summary-row"><span>Datums:</span><strong>{{ selectedDate }}</strong></div>
-          <div class="summary-row"><span>Cena:</span><strong class="price-highlight">{{ service.price }} €</strong></div>
+          <div class="summary-row"><span>{{ $t('service_name') }}:</span><strong>{{ service.name }}</strong></div>
+          <div class="summary-row"><span>{{ $t('specialist') }}:</span><strong>{{ provider.username }}</strong></div>
+          <div class="summary-row"><span>{{ $t('duration') }}:</span><strong>{{ service.duration_minutes || 60 }} min</strong></div>
+          <div class="summary-row"><span>{{ $t('select_date') }}:</span><strong>{{ selectedDate }}</strong></div>
+          <div class="summary-row"><span>{{ $t('price') }}:</span><strong class="price-highlight">{{ service.price }} €</strong></div>
         </div>
 
         <div class="time-grid" v-if="availableTimes.length > 0">
@@ -126,16 +126,16 @@
           >{{ t }}</button>
         </div>
         <div v-else class="empty-state">
-          <p>Diemžēl šajā dienā visi laiki ir aizņemti.</p>
+          <p>{{ $t('no_times_available') }}</p>
           <button class="btn-waitlist" @click="addToWaitlist" :disabled="waitlistAdded">
-            {{ waitlistAdded ? '✓ Pievienots gaidīšanas sarakstam' : '➕ Pievienot gaidīšanas sarakstam' }}
+            {{ waitlistAdded ? '✓ ' + $t('added_to_waitlist') : '➕ ' + $t('add_to_waitlist') }}
           </button>
         </div>
 
         <div class="wizard-footer">
-          <button class="btn-secondary" @click="step = 2">Atpakaļ</button>
+          <button class="btn-secondary" @click="step = 2">{{ $t('back') }}</button>
           <button class="btn-confirm" @click="confirmBooking" :disabled="!selectedTime">
-            Apstiprināt rezervāciju
+            {{ $t('confirm_booking') }}
           </button>
         </div>
       </div>
@@ -143,23 +143,23 @@
       <!-- Step 4: Success -->
       <div v-if="step === 4" class="success-wrap">
         <div class="check-animation">✅</div>
-        <h2>Rezervācija apstiprināta!</h2>
+        <h2>{{ $t('booking_confirmed') }}</h2>
         <div class="success-summary">
-          <div class="summary-row"><span>Pakalpojums:</span><strong>{{ service.name }}</strong></div>
-          <div class="summary-row"><span>Speciālists:</span><strong>{{ provider.username }}</strong></div>
-          <div class="summary-row"><span>Datums:</span><strong>{{ selectedDate }}</strong></div>
-          <div class="summary-row"><span>Laiks:</span><strong>{{ selectedTime }}</strong></div>
-          <div class="summary-row"><span>Cena:</span><strong class="price-highlight">{{ service.price }} €</strong></div>
+          <div class="summary-row"><span>{{ $t('service_name') }}:</span><strong>{{ service.name }}</strong></div>
+          <div class="summary-row"><span>{{ $t('specialist') }}:</span><strong>{{ provider.username }}</strong></div>
+          <div class="summary-row"><span>{{ $t('select_date') }}:</span><strong>{{ selectedDate }}</strong></div>
+          <div class="summary-row"><span>{{ $t('select_time') }}:</span><strong>{{ selectedTime }}</strong></div>
+          <div class="summary-row"><span>{{ $t('price') }}:</span><strong class="price-highlight">{{ service.price }} €</strong></div>
           <div class="summary-row">
-          <span>📍 Adrese:</span>
-          <strong>{{ provider.address || 'Tiks norādīta pēc rezervācijas' }}</strong>
+            <span>📍 {{ $t('address') }}:</span>
+            <strong>{{ provider.address || $t('will_be_provided') }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>📞 {{ $t('contact') }}:</span>
+            <strong>{{ provider.phone || $t('not_specified') }}</strong>
+          </div>
         </div>
-        <div class="summary-row">
-          <span>📞 Sazināties:</span>
-          <strong>{{ provider.phone || 'Nav norādīts' }}</strong>
-        </div>
-        </div>
-        <button class="btn-primary" @click="$emit('done')">Pabeigt</button>
+        <button class="btn-primary" @click="$emit('done')">{{ $t('done') }}</button>
       </div>
 
     </div>

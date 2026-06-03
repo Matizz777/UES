@@ -3,11 +3,11 @@
   <div v-if="!viewingProvider" class="catalog-view">
     <div class="catalog-filter-wrapper">
       <div class="search-main">
-        <input v-model="searchQuery" placeholder="Meklēt speciālistu..." @input="fetchProviders" />
+        <input v-model="searchQuery" :placeholder="$t('search_provider')" @input="fetchProviders" />
         <span class="search-icon">🔍</span>
       </div>
       <select v-model="selectedIndustry" @change="fetchProviders" class="industry-select">
-        <option value="">Visas nozares</option>
+        <option value="">{{ $t('all_industries') }}</option>
         <option value="Medicīna">Medicīna</option>
         <option value="IT pakalpojumi">IT pakalpojumi</option>
         <option value="Skaistumkopšana">Skaistumkopšana</option>
@@ -40,7 +40,7 @@
           </div>
         </div>
         <p class="provider-desc">{{ p.description }}</p>
-        <button class="btn-book" @click="viewingProvider = p">Skatīt pakalpojumus</button>
+        <button class="btn-book" @click="viewingProvider = p">{{ $t('view_services') }}</button>
       </div>
     </div>
   </div>

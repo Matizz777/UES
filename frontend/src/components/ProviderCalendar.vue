@@ -1,41 +1,14 @@
 <template>
   <div class="provider-calendar fade-in">
     <div class="view-header">
-      <button @click="$emit('back')" class="btn-back">← Atpakaļ</button>
-      <h2>Mans kalendārs</h2>
+      <button @click="$emit('back')" class="btn-back">← {{ $t('back') }}</button>
+      <h2>{{ $t('my_calendar') }}</h2>
     </div>
 
-    <!-- Month nav -->
     <div class="cal-nav">
       <button @click="changeMonth(-1)">‹</button>
       <span>{{ monthName }} {{ year }}</span>
       <button @click="changeMonth(1)">›</button>
-    </div>
-
-    <!-- Month grid -->
-    <div class="month-grid">
-      <div v-for="d in ['Pr','Ot','Tr','Ce','Pk','Se','Sv']" :key="d" class="grid-header">{{ d }}</div>
-      <div v-for="blank in firstDayOffset" :key="'b'+blank" class="grid-cell empty"></div>
-      <div
-        v-for="day in daysInMonth"
-        :key="day"
-        class="grid-cell"
-        :class="{ today: isToday(day), selected: selectedDay === day, 'has-bookings': hasBookings(day) }"
-        @click="selectDay(day)"
-      >
-        <span class="day-num">{{ day }}</span>
-        <div class="booking-dots">
-          <span
-            v-for="(b, i) in getBookingsForDay(day).slice(0, 3)"
-            :key="i"
-            class="dot"
-            :title="b.service + ' ' + b.start"
-          ></span>
-          <span v-if="getBookingsForDay(day).length > 3" class="dot-more">
-            +{{ getBookingsForDay(day).length - 3 }}
-          </span>
-        </div>
-      </div>
     </div>
 
     <!-- Day detail panel -->
@@ -43,7 +16,7 @@
       <h3>{{ selectedDay }}. {{ monthName }}</h3>
 
       <div v-if="selectedDayBookings.length === 0" class="empty-day">
-        <p>Nav rezervāciju šajā dienā.</p>
+        <p>{{ $t('no_bookings_this_day') }}</p>
       </div>
 
       <div v-else class="timeline">
@@ -54,12 +27,12 @@
           </div>
           <div class="timeline-content">
             <div class="timeline-service">{{ b.service }}</div>
-            <div class="timeline-client">👤 {{ b.client_name }}</div>
+            <div class="timeline-client">👤 {{ $t('client') }}: {{ b.client_name }}</div>
             <div class="timeline-price" v-if="b.booked_price">💶 {{ b.booked_price }} €</div>
           </div>
           <div class="timeline-actions">
-            <button class="btn-reschedule" @click="openReschedule(b)">✏️ Pārcelt</button>
-            <button class="btn-cancel-booking" @click="openCancel(b)">✕ Atcelt</button>
+            <button class="btn-reschedule" @click="openReschedule(b)">✏️ {{ $t('reschedule') }}</button>
+            <button class="btn-cancel-booking" @click="openCancel(b)">✕ {{ $t('cancel') }}</button>
           </div>
         </div>
       </div>
@@ -68,14 +41,14 @@
     <!-- Cancel modal -->
     <div v-if="cancelTarget" class="modal-overlay" @click.self="cancelTarget = null">
       <div class="modal-card">
-        <h3>Atcelt pierakstu</h3>
+        <h3>{{ $t('cancel_booking') }}</h3>
         <p><strong>{{ cancelTarget.service }}</strong> — {{ cancelTarget.client_name }}</p>
         <p>{{ cancelTarget.date }} {{ cancelTarget.start }} – {{ cancelTarget.end }}</p>
-        <label class="modal-label">Atcelšanas iemesls (nosūtīs klientam)</label>
-        <textarea v-model="cancelReason" placeholder="Piem.: Esmu saslimis, lūdzu piesakieties vēlreiz." rows="3"></textarea>
+        <label class="modal-label">{{ $t('cancel_reason') }}</label>
+        <textarea v-model="cancelReason" :placeholder="$t('cancel_reason_placeholder')" rows="3"></textarea>
         <div class="modal-footer">
-          <button class="btn-secondary" @click="cancelTarget = null">Aizvērt</button>
-          <button class="btn-danger" @click="confirmCancel" :disabled="!cancelReason.trim()">Atcelt pierakstu</button>
+          <button class="btn-secondary" @click="cancelTarget = null">{{ $t('close') }}</button>
+          <button class="btn-danger" @click="confirmCancel" :disabled="!cancelReason.trim()">{{ $t('cancel_booking') }}</button>
         </div>
       </div>
     </div>
@@ -83,29 +56,29 @@
     <!-- Reschedule modal -->
     <div v-if="rescheduleTarget" class="modal-overlay" @click.self="rescheduleTarget = null">
       <div class="modal-card">
-        <h3>Pārcelt pierakstu</h3>
+        <h3>{{ $t('reschedule') }}</h3>
         <p><strong>{{ rescheduleTarget.service }}</strong> — {{ rescheduleTarget.client_name }}</p>
-        <p class="old-time">Esošais laiks: {{ rescheduleTarget.date }} {{ rescheduleTarget.start }}</p>
+        <p class="old-time">{{ $t('current_time') }}: {{ rescheduleTarget.date }} {{ rescheduleTarget.start }}</p>
 
-        <label class="modal-label">Jauns datums</label>
+        <label class="modal-label">{{ $t('select_date') }}</label>
         <input type="date" v-model="newDate" :min="todayStr" />
 
-        <label class="modal-label" style="margin-top:0.75rem;">Jauns laiks</label>
+        <label class="modal-label">{{ $t('select_time') }}</label>
         <input type="time" v-model="newTime" />
 
-        <label class="modal-label" style="margin-top:0.75rem;">Iemesls (nosūtīs klientam)</label>
-        <textarea v-model="rescheduleReason" placeholder="Piem.: Nepieciešams pārcelt grafika izmaiņu dēļ." rows="2"></textarea>
+        <label class="modal-label">{{ $t('reschedule_reason') }}</label>
+        <textarea v-model="rescheduleReason" :placeholder="$t('reschedule_reason_placeholder')" rows="2"></textarea>
 
         <div class="modal-footer">
-          <button class="btn-secondary" @click="rescheduleTarget = null">Aizvērt</button>
+          <button class="btn-secondary" @click="rescheduleTarget = null">{{ $t('close') }}</button>
           <button class="btn-primary" @click="confirmReschedule" :disabled="!newDate || !newTime || !rescheduleReason.trim()">
-            Saglabāt
+            {{ $t('save') }}
           </button>
         </div>
       </div>
     </div>
 
-    <div v-if="loading" class="loading-overlay">Ielādē...</div>
+    <div v-if="loading" class="loading-overlay">{{ $t('loading') }}</div>
   </div>
 </template>
 
