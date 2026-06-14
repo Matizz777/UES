@@ -1538,3 +1538,15 @@ body {
   font-size: 0.7rem;
   color: #888;
 }
+
+.apraksts {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+  padding: 2rem;
+}

@@ -1,6 +1,7 @@
 <template>
   <div class="form-container">
     <div class="register-card">
+      <LanguageSelector />
       <h2>{{ $t('register') }}</h2>
 
       <div v-if="errorMsg" class="error-banner">{{ errorMsg }}</div>
@@ -66,6 +67,7 @@
 <script setup>
 import { reactive, ref } from 'vue';
 import axios from 'axios';
+import LanguageSelector from './LanguageSelector.vue';
 
 const emit = defineEmits(['register-success', 'go-login', 'back']);
 
@@ -102,3 +104,17 @@ const submit = async () => {
   }
 };
 </script>
+
+<style scoped>
+.form-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+  padding: 2rem;
+}
+</style>

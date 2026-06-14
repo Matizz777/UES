@@ -1,6 +1,7 @@
 <template>
   <div class="form-container">
     <div class="register-card">
+      <LanguageSelector />
       <h2>{{ $t('login') }}</h2>
 
       <div v-if="errorMsg" class="error-banner">{{ errorMsg }}</div>
@@ -18,6 +19,12 @@
         @keyup.enter="submit"
       />
 
+      <div class="form-links">
+        <p class="forgot-password" @click="$emit('go-forgot')">
+          {{ $t('forgot_password') }}
+        </p>
+      </div>
+
       <button class="btn-register" @click="submit" :disabled="loading">
         {{ loading ? $t('loading') : $t('login') }}
       </button>
@@ -33,8 +40,9 @@
 <script setup>
 import { reactive, ref } from 'vue';
 import axios from 'axios';
+import LanguageSelector from './LanguageSelector.vue';
 
-const emit = defineEmits(['login-success', 'go-register', 'back']);
+const emit = defineEmits(['login-success', 'go-register', 'go-forgot', 'back']);
 
 const credentials = reactive({ username: '', password: '' });
 const loading     = ref(false);
@@ -60,3 +68,34 @@ const submit = async () => {
   }
 };
 </script>
+
+<style scoped>
+
+.form-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+  padding: 2rem;
+}
+
+.form-links {
+  text-align: right;
+  margin-bottom: 1rem;
+}
+
+.forgot-password {
+  font-size: 0.8rem;
+  color: #4a90e2;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.forgot-password:hover {
+  color: #357abd;
+}
+</style>

@@ -39,5 +39,7 @@ urlpatterns = [
     path('api/admin/bookings/delete/<int:booking_id>/', views.admin_delete_booking, name='admin-delete-booking'),
     path('set-language/<str:language_code>/', views.set_language, name='set_language'),
     path('api/set-language/', views.api_set_language, name='api_set_language'),
+    path('api/password-reset/request/', views.request_password_reset, name='password-reset-request'),
+    path('api/password-reset/confirm/', views.confirm_password_reset, name='password-reset-confirm'),
     
 ]

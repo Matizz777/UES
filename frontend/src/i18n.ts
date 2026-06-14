@@ -1,7 +1,8 @@
 import { createI18n } from 'vue-i18n'
 
 const en = {
-  // Navbar
+  app_title: "Universal e-Booking System",
+  app_subtitle: "Booking in just a few clicks",
   profile: "Profile",
   logout: "Logout",
   admin: "Admin",
@@ -232,9 +233,19 @@ const en = {
   not_available: "Not available / Not working",
   will_be_provided: "Will be provided after booking",
   contact: "Contact",
+
+  forgot_password_instruction: "Enter your email address and we'll send you a link to reset your password.",
+  send_reset_link: "Send Reset Link",
+  reset_password: "Reset Password",
+  back_to_login: "Back to Login",
+  reset_password_success: "Password successfully changed!",
+  password_reset_email_sent: "Password reset link has been sent to your email.",
+  invalid_reset_link: "Invalid or expired reset link."
 }
 
 const lv = {
+  app_title: "Universālā e-pierakstu sistēma",
+  app_subtitle: "Pieraksts pāris klikšķu attālumā",
   profile: "Profils",
   logout: "Iziet",
   admin: "Admin",
@@ -463,6 +474,13 @@ const lv = {
   cancel_reason_placeholder: "Piemērs: Esmu saslimis, lūdzu pierakstieties vēlreiz.",
   reschedule_reason_placeholder: "Piemērs: Nepieciešams pārcelt grafika izmaiņu dēļ.",
   business_info_note: "Šī informācija tiks rādīta klientiem jūsu profilā.",
+  forgot_password_instruction: "Ievadiet savu e-pasta adresi, un mēs nosūtīsim jums saiti paroles atjaunošanai.",
+  send_reset_link: "Nosūtīt atjaunošanas saiti",
+  reset_password: "Atjaunot paroli",
+  back_to_login: "Atpakaļ uz pieteikšanos",
+  reset_password_success: "Parole veiksmīgi mainīta!",
+  password_reset_email_sent: "Paroles atjaunošanas saite nosūtīta uz jūsu e-pastu.",
+  invalid_reset_link: "Nederīga vai novecojusi atjaunošanas saite."
 
 }
 

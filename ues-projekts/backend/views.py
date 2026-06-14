@@ -11,6 +11,9 @@ from django.utils.translation import gettext as _
 from django.utils.translation import activate
 from django.shortcuts import redirect
 from django.conf import settings
+import secrets
+from django.core.mail import send_mail
+from django.conf import settings
 
 def set_language(request, language_code):
     if language_code in dict(settings.LANGUAGES):
@@ -1348,4 +1351,137 @@ def admin_delete_booking(request, booking_id):
             cursor.execute("DELETE FROM reservations WHERE id = %s", [booking_id])
         return JsonResponse({"status": "success"})
     except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+    
+password_reset_tokens = {}
+
+@csrf_exempt
+def request_password_reset(request):
+    """Send password reset email"""
+    if request.method != 'POST':
+        return JsonResponse({"error": _("POST only")}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        
+        if not email:
+            return JsonResponse({"error": _("E-pasta adrese ir obligāta")}, status=400)
+        
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, username FROM auth_user WHERE email = %s",
+                [email]
+            )
+            user = cursor.fetchone()
+        
+        if not user:
+            # Drošības apsvērumu dēļ neatklājam, ka lietotājs neeksistē
+            return JsonResponse({
+                "message": _("Ja šāds e-pasts pastāv, paroles atjaunošanas saite tiks nosūtīta.")
+            })
+        
+        user_id = user[0]
+        username = user[1]
+        
+        # Generate unique token
+        token = secrets.token_urlsafe(32)
+        expires_at = datetime.now() + timedelta(hours=24)
+        
+        # Store token
+        password_reset_tokens[email] = {
+            "token": token,
+            "expires": expires_at,
+            "user_id": user_id
+        }
+        
+        # Build reset URL (Vue route)
+        frontend_url = "http://localhost:5173"
+        reset_link = f"{frontend_url}/reset-password/{token}"
+        
+        # Send email
+        subject = _("Paroles atjaunošana - UES")
+        message = _(
+            "Sveiki, {username}!\n\n"
+            "Jūs saņēmāt šo e-pastu, jo tika pieprasīta paroles atjaunošana jūsu UES kontam.\n\n"
+            "Lai atjaunotu paroli, noklikšķiniet uz šīs saites:\n"
+            "{reset_link}\n\n"
+            "Saite ir derīga 24 stundas.\n\n"
+            "Ja jūs nepieprasījāt paroles atjaunošanu, lūdzu, ignorējiet šo e-pastu.\n\n"
+            "Ar cieņu,\nUES komanda"
+        ).format(username=username, reset_link=reset_link)
+        
+        try:
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            print(f"Email sending failed: {e}")
+            return JsonResponse({
+                "error": _("Neizdevās nosūtīt e-pastu. Lūdzu, mēģiniet vēlāk.")
+            }, status=500)
+        
+        return JsonResponse({
+            "message": _("Paroles atjaunošanas saite nosūtīta uz jūsu e-pastu.")
+        })
+        
+    except Exception as e:
+        print(f"Password reset request error: {e}")
+        return JsonResponse({"error": str(e)}, status=500)
+
+@csrf_exempt
+def confirm_password_reset(request):
+    """Reset password with token"""
+    if request.method != 'POST':
+        return JsonResponse({"error": _("POST only")}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        token = data.get('token')
+        new_password = data.get('new_password')
+        
+        if not token or not new_password:
+            return JsonResponse({"error": _("Token un jaunā parole ir obligāti")}, status=400)
+        
+        if len(new_password) < 6:
+            return JsonResponse({"error": _("Parolei jābūt vismaz 6 rakstzīmēm")}, status=400)
+        
+        user_email = None
+        reset_data = None
+        
+        for email, data in password_reset_tokens.items():
+            if data["token"] == token:
+                if datetime.now() > data["expires"]:
+                    del password_reset_tokens[email]
+                    return JsonResponse({"error": _("Paroles atjaunošanas saite ir beigusi derīgumu")}, status=400)
+                user_email = email
+                reset_data = data
+                break
+        
+        if not user_email:
+            return JsonResponse({"error": _("Nederīga paroles atjaunošanas saite")}, status=400)
+        
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE auth_user SET password = %s WHERE id = %s",
+                [make_password(new_password), reset_data["user_id"]]
+            )
+        
+        # Remove used token
+        del password_reset_tokens[user_email]
+        
+        create_notification(
+            reset_data["user_id"],
+            _("Parole mainīta"),
+            _("Jūsu parole ir veiksmīgi mainīta. Ja jūs to neveicāt, lūdzu, sazinieties ar atbalsta dienestu.")
+        )
+        
+        return JsonResponse({"message": _("Parole veiksmīgi mainīta!")})
+        
+    except Exception as e:
+        print(f"Password reset confirm error: {e}")
         return JsonResponse({"error": str(e)}, status=500)
