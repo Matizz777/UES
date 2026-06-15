@@ -1,0 +1,10 @@
+{
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "deploy": {
+    "startCommand": "gunicorn backend.wsgi:application",
+    "healthcheckPath": "/api/catalog/",
+    "restartPolicyType": "ON_FAILURE"
+  }
+}
