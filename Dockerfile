@@ -2,18 +2,18 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install dependencies
+# Copy requirements first (better caching)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application
+# Copy the entire project
 COPY . .
 
-# Collect static files
+# Run migrations and collect static
+RUN python manage.py makemigrations --noinput
+RUN python manage.py migrate --noinput
 RUN python manage.py collectstatic --noinput
 
-# Expose port
 EXPOSE 8000
 
-# Start command
 CMD ["gunicorn", "backend.wsgi:application", "--bind", "0.0.0.0:8000"]
